@@ -67,3 +67,17 @@ pip install -r requirements.txt
 
 # 5. Rode o servidor
 uvicorn api:app --reload
+
+```
+### Font-end (`app-pousada`)
+```bash
+# 1. Navegue até a pasta do front-end
+cd app-pousada
+
+# 2. Instale as dependências
+npm install
+
+# 3. Crie um arquivo .env.local com NEXT_PUBLIC_API_URL="http://localhost:8000"
+
+# 4. Rode o servidor de desenvolvimento
+npm run dev
