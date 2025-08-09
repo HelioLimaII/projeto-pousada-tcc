@@ -1,0 +1,13 @@
+# Arquivos do Python (Back-end)
+api-pousada/venv/
+api-pousada/__pycache__/
+api-pousada/.env
+
+# Arquivos do Node.js (Front-end)
+app-pousada/node_modules/
+app-pousada/.next/
+app-pousada/out/
+app-pousada/.env.local
+
+# Arquivos do macOS
+.DS_Store
