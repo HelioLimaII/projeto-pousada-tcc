@@ -1,6 +1,8 @@
 // Em: src/app/quartos/page.tsx
+
 import QuartoCard from "@/components/ui/QuartoCard";
 
+// A interface permanece a mesma
 interface Quarto {
   id: string;
   numero: number;
@@ -16,14 +18,16 @@ interface Quarto {
 async function getQuartos() {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
     const res = await fetch(`${apiUrl}/quartos`, { cache: 'no-store' });
-    if (!res.ok) return [];
+    if (!res.ok) {
+        console.error("Falha ao buscar quartos da API");
+        return [];
+    }
     const data: Quarto[] = await res.json();
-    // Filtra para mostrar apenas quartos disponíveis na página pública
-    return data.filter(quarto => quarto.status === 'disponivel');
+    return data; // MODIFICAÇÃO: Removemos o filtro, agora retorna todos os quartos
 }
 
 export default async function QuartosPage() {
-  const quartosDisponiveis = await getQuartos();
+  const todosOsQuartos = await getQuartos();
 
   return (
     <div>
@@ -37,11 +41,11 @@ export default async function QuartosPage() {
       </section>
 
       <section className="py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-        {quartosDisponiveis.length === 0 ? (
-          <div className="text-center py-16"><p>Nenhum quarto disponível no momento.</p></div>
+        {todosOsQuartos.length === 0 ? (
+          <div className="text-center py-16"><p>Nenhum quarto cadastrado no momento.</p></div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {quartosDisponiveis.map((quarto) => (
+            {todosOsQuartos.map((quarto) => (
               <QuartoCard key={quarto.id} quarto={quarto} />
             ))}
           </div>

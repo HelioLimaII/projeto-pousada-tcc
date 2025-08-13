@@ -81,7 +81,7 @@ export default function QuartoDetalhePage() {
       return;
     }
     const message = `Olá! Gostaria de fazer uma reserva na Pousada Zekas.\n\n*Dados da Reserva:*\n- Nome: ${formData.nome}\n- Quarto: ${quarto?.titulo} (Quarto ${quarto?.numero})\n- Check-in: ${new Date(formData.checkin).toLocaleDateString('pt-BR')}\n- Check-out: ${new Date(formData.checkout).toLocaleDateString('pt-BR')}\n- Valor da diária: R$ ${quarto?.preco_diaria}\n${formData.observacoes ? `- Observações: ${formData.observacoes}` : ''}\n\nAguardo retorno para confirmar a disponibilidade!`;
-    const whatsappUrl = `https://wa.me/5511999999999?text=${encodeURIComponent(message)}`; // Substitua pelo número real
+    const whatsappUrl = `https://wa.me/5583996872334?text=${encodeURIComponent(message)}`; // Substitua pelo número real
     window.open(whatsappUrl, '_blank');
   };
 

@@ -5,10 +5,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-// Garanta que todos os ícones que você quer usar estão importados aqui
 import { Wifi, Car, Coffee, Tv, Users } from 'lucide-react';
 
-// Interface para definir a "forma" dos dados do quarto, alinhada com o back-end
 interface Quarto {
   id: string;
   numero: number;
@@ -21,58 +19,52 @@ interface Quarto {
   status: string;
 }
 
-// Função auxiliar para mapear nomes de comodidades para seus ícones
 const getComodidadeIcon = (comodidade: string) => {
-  switch (comodidade.toLowerCase()) {
-    case 'wi-fi':
-    case 'wifi':
-      return <Wifi className="w-4 h-4 text-[#6B8E23]" />;
-    case 'estacionamento':
-      return <Car className="w-4 h-4 text-[#6B8E23]" />;
-    case 'café da manhã':
-      return <Coffee className="w-4 h-4 text-[#6B8E23]" />;
-    case 'tv':
-      return <Tv className="w-4 h-4 text-[#6B8E23]" />;
-    default:
-      return null; // Retorna nada se não encontrar um ícone
-  }
+  // ... (código da função getComodidadeIcon)
 };
 
-// O componente principal do Card
+// --- NOVA FUNÇÃO PARA ESTILIZAR O STATUS ---
+const StatusBadge = ({ status }: { status: string }) => {
+  const statusInfo = {
+    disponivel: { text: "Disponível", color: "bg-green-500" },
+    ocupado: { text: "Ocupado", color: "bg-red-500" },
+    manutencao: { text: "Em Manutenção", color: "bg-yellow-500" },
+  };
+
+  const info = statusInfo[status.toLowerCase() as keyof typeof statusInfo] || { text: status, color: "bg-gray-500" };
+
+  return (
+    <span className={`${info.color} text-white px-3 py-1 rounded-full text-xs font-medium`}>
+      {info.text}
+    </span>
+  );
+};
+
 export default function QuartoCard({ quarto }: { quarto: Quarto }) {
+  const isDisponivel = quarto.status.toLowerCase() === 'disponivel';
+
   return (
     <Card className="overflow-hidden flex flex-col hover:shadow-xl transition-all duration-300 border-[#6B8E23]/20 group">
-      {/* Imagem Clicável */}
-      <Link href={`/quartos/${quarto.id}`}>
-        <div className="relative h-64 overflow-hidden">
+      <div className="relative h-64 overflow-hidden">
+        <Link href={`/quartos/${quarto.id}`}>
           <Image
             src={quarto.fotos[0] || "/placeholder-5t9d5.png"}
             alt={quarto.titulo}
             fill
             className="object-cover group-hover:scale-105 transition-transform duration-300"
           />
+        </Link>
+        {/* --- ETIQUETA DE STATUS ADICIONADA AQUI --- */}
+        <div className="absolute top-4 left-4">
+          <StatusBadge status={quarto.status} />
         </div>
-      </Link>
-
-      {/* Conteúdo do Card */}
+      </div>
+      
       <CardContent className="p-6 flex flex-col flex-grow">
         <h3 className="text-xl font-bold text-[#2F4F4F] mb-2">{quarto.titulo}</h3>
+        <p className="text-[#2F4F4F]/80 mb-4 line-clamp-3 flex-grow">{quarto.descricao}</p>
         
-        <p className="text-[#2F4F4F]/80 mb-4 line-clamp-3 flex-grow">
-          {quarto.descricao}
-        </p>
-
-        {/* Seção de Comodidades */}
-        <div className="flex flex-wrap gap-x-4 gap-y-2 mb-4 h-10 items-center">
-          {(quarto.comodidades || []).slice(0, 4).map((item) => (
-            <div key={item} className="flex items-center gap-1 text-sm text-[#2F4F4F]/80">
-              {getComodidadeIcon(item)}
-              <span>{item}</span>
-            </div>
-          ))}
-        </div>
-
-        {/* Seção de Preço e Capacidade */}
+        {/* ... (código das comodidades, preço e capacidade) ... */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-1 text-sm text-[#2F4F4F]/70">
             <Users className="w-4 h-4" />
@@ -84,11 +76,14 @@ export default function QuartoCard({ quarto }: { quarto: Quarto }) {
           </span>
         </div>
         
-        {/* Botão de Ação */}
         <div className="mt-auto pt-4 border-t border-gray-200/60">
           <Link href={`/quartos/${quarto.id}`}>
-            <Button className="w-full bg-[#6B8E23] hover:bg-[#5a7a1f] text-white transition-colors">
-              Ver Detalhes e Reservar
+            {/* --- LÓGICA DO BOTÃO ATUALIZADA --- */}
+            <Button 
+              className="w-full bg-[#6B8E23] hover:bg-[#5a7a1f] text-white transition-colors disabled:bg-gray-400"
+              disabled={!isDisponivel}
+            >
+              {isDisponivel ? 'Ver Detalhes e Reservar' : 'Indisponível'}
             </Button>
           </Link>
         </div>
