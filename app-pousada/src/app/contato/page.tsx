@@ -12,10 +12,20 @@ import { MapPin, Phone, Mail, Clock, MessageCircle, Send } from 'lucide-react'
 import Link from 'next/link'
 
 export default function ContatoPage() {
+  // 1. Adicionados novos campos ao estado inicial do formulário
   const [formData, setFormData] = useState({
     nome: '',
     email: '',
     telefone: '',
+    rg: '',
+    cpf: '',
+    profissao: '',
+    endereco: '',
+    bairro: '',
+    cidade: '',
+    estado: '',
+    cep: '',
+    placaVeiculo: '',
     checkin: '',
     checkout: '',
     hospedes: '2',
@@ -31,6 +41,7 @@ export default function ContatoPage() {
     })
   }
 
+  // 2. Atualizado o corpo da mensagem para WhatsApp e Email para incluir os novos campos
   const handleWhatsAppSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
@@ -41,14 +52,36 @@ export default function ContatoPage() {
       return
     }
 
-    let message = `Olá! Gostaria de entrar em contato com a Pousada Zekas.\n\n*Dados do Contato:*\n- Nome: ${formData.nome}\n- Email: ${formData.email || 'Não informado'}\n- Telefone: ${formData.telefone}`
+    let message = `Olá! Gostaria de solicitar informações ou fazer uma reserva na Pousada Zekas.\n`
+    
+    message += `\n*Dados Pessoais:*`
+    message += `\n- Nome: ${formData.nome}`
+    message += `\n- Email: ${formData.email || 'Não informado'}`
+    message += `\n- Telefone: ${formData.telefone}`
+    message += `\n- RG/Passaporte: ${formData.rg || 'Não informado'}`
+    message += `\n- CPF: ${formData.cpf || 'Não informado'}`
+    message += `\n- Profissão: ${formData.profissao || 'Não informado'}`
+    
+    message += `\n\n*Endereço:*`
+    message += `\n- Endereço: ${formData.endereco || 'Não informado'}`
+    message += `\n- Bairro: ${formData.bairro || 'Não informado'}`
+    message += `\n- Cidade: ${formData.cidade || 'Não informado'}`
+    message += `\n- Estado: ${formData.estado || 'Não informado'}`
+    message += `\n- CEP: ${formData.cep || 'Não informado'}`
+
+    if (formData.placaVeiculo) {
+      message += `\n\n- Placa do Veículo: ${formData.placaVeiculo}`
+    }
 
     if (formData.checkin && formData.checkout) {
-      message += `\n\n*Interesse em Reserva:*\n- Check-in: ${new Date(formData.checkin).toLocaleDateString('pt-BR')}\n- Check-out: ${new Date(formData.checkout).toLocaleDateString('pt-BR')}\n- Número de hóspedes: ${formData.hospedes}`
+      message += `\n\n*Interesse em Reserva:*`
+      message += `\n- Check-in: ${new Date(formData.checkin).toLocaleDateString('pt-BR')}`
+      message += `\n- Check-out: ${new Date(formData.checkout).toLocaleDateString('pt-BR')}`
+      message += `\n- Número de hóspedes: ${formData.hospedes}`
     }
 
     if (formData.mensagem) {
-      message += `\n\n*Mensagem:*\n${formData.mensagem}`
+      message += `\n\n*Mensagem Adicional:*\n${formData.mensagem}`
     }
 
     message += `\n\nAguardo retorno!`
@@ -69,16 +102,37 @@ export default function ContatoPage() {
       alert('Por favor, preencha pelo menos seu nome e email.')
       return
     }
+    
+    const subject = 'Solicitação de Reserva/Contato - Pousada Zekas'
+    
+    let body = `Dados Pessoais:%0D%0A`
+    body += `Nome: ${formData.nome}%0D%0A`
+    body += `Email: ${formData.email}%0D%0A`
+    body += `Telefone: ${formData.telefone || 'Não informado'}%0D%0A`
+    body += `RG/Passaporte: ${formData.rg || 'Não informado'}%0D%0A`
+    body += `CPF: ${formData.cpf || 'Não informado'}%0D%0A`
+    body += `Profissão: ${formData.profissao || 'Não informado'}%0D%0A%0D%0A`
 
-    const subject = 'Contato - Pousada Zekas'
-    let body = `Nome: ${formData.nome}%0D%0AEmail: ${formData.email}%0D%0ATelefone: ${formData.telefone || 'Não informado'}%0D%0A%0D%0A`
+    body += `Endereço:%0D%0A`
+    body += `Logradouro: ${formData.endereco || 'Não informado'}%0D%0A`
+    body += `Bairro: ${formData.bairro || 'Não informado'}%0D%0A`
+    body += `Cidade: ${formData.cidade || 'Não informado'}%0D%0A`
+    body += `Estado: ${formData.estado || 'Não informado'}%0D%0A`
+    body += `CEP: ${formData.cep || 'Não informado'}%0D%0A%0D%0A`
+    
+    if(formData.placaVeiculo) {
+      body += `Placa do Veículo: ${formData.placaVeiculo}%0D%0A%0D%0A`
+    }
     
     if (formData.checkin && formData.checkout) {
-      body += `Check-in: ${new Date(formData.checkin).toLocaleDateString('pt-BR')}%0D%0ACheck-out: ${new Date(formData.checkout).toLocaleDateString('pt-BR')}%0D%0AHóspedes: ${formData.hospedes}%0D%0A%0D%0A`
+      body += `Interesse em Reserva:%0D%0A`
+      body += `Check-in: ${new Date(formData.checkin).toLocaleDateString('pt-BR')}%0D%0A`
+      body += `Check-out: ${new Date(formData.checkout).toLocaleDateString('pt-BR')}%0D%0A`
+      body += `Hóspedes: ${formData.hospedes}%0D%0A%0D%0A`
     }
     
     if (formData.mensagem) {
-      body += `Mensagem:%0D%0A${formData.mensagem}`
+      body += `Mensagem Adicional:%0D%0A${formData.mensagem}`
     }
     
     const emailPousada = "contato@pousadazekas.com.br"; // Substitua pelo email real
@@ -96,7 +150,7 @@ export default function ContatoPage() {
           </h2>
           <p className="text-lg text-[#2F4F4F]/80 max-w-2xl mx-auto">
             Estamos aqui para ajudar você a planejar sua estadia perfeita na Pousada Zekas. 
-            Entre em contato conosco através dos canais abaixo.
+            Preencha o formulário abaixo para solicitar informações ou fazer sua reserva.
           </p>
         </div>
       </section>
@@ -112,7 +166,9 @@ export default function ContatoPage() {
                   Solicitar Informações ou Reserva
                 </h3>
                 
+                {/* 3. Formulário atualizado com os novos campos */}
                 <form onSubmit={handleWhatsAppSubmit} className="space-y-4">
+                  {/* --- Dados Pessoais --- */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="nome">Nome Completo *</Label>
@@ -122,18 +178,58 @@ export default function ContatoPage() {
                       <Label htmlFor="email">Email</Label>
                       <Input id="email" name="email" type="email" value={formData.email} onChange={handleInputChange} placeholder="seu@email.com" />
                     </div>
+                    <div>
+                      <Label htmlFor="telefone">Telefone/WhatsApp *</Label>
+                      <Input id="telefone" name="telefone" type="tel" value={formData.telefone} onChange={handleInputChange} placeholder="(11) 99999-9999" required />
+                    </div>
+                     <div>
+                      <Label htmlFor="profissao">Profissão</Label>
+                      <Input id="profissao" name="profissao" value={formData.profissao} onChange={handleInputChange} placeholder="Sua profissão" />
+                    </div>
+                    <div>
+                      <Label htmlFor="rg">RG / Passaporte</Label>
+                      <Input id="rg" name="rg" value={formData.rg} onChange={handleInputChange} placeholder="Número do documento" />
+                    </div>
+                    <div>
+                      <Label htmlFor="cpf">CPF</Label>
+                      <Input id="cpf" name="cpf" value={formData.cpf} onChange={handleInputChange} placeholder="000.000.000-00" />
+                    </div>
+                  </div>
+                  
+                  {/* --- Endereço --- */}
+                   <div className="border-t border-[#6B8E23]/20 pt-4 mt-4">
+                    <h4 className="text-lg font-medium text-[#2F4F4F] mb-4">
+                      Endereço (Opcional)
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="md:col-span-2">
+                        <Label htmlFor="endereco">Endereço</Label>
+                        <Input id="endereco" name="endereco" value={formData.endereco} onChange={handleInputChange} placeholder="Rua, Av, etc., Número" />
+                      </div>
+                       <div>
+                        <Label htmlFor="bairro">Bairro</Label>
+                        <Input id="bairro" name="bairro" value={formData.bairro} onChange={handleInputChange} placeholder="Seu bairro" />
+                      </div>
+                       <div>
+                        <Label htmlFor="cep">CEP</Label>
+                        <Input id="cep" name="cep" value={formData.cep} onChange={handleInputChange} placeholder="00000-000" />
+                      </div>
+                       <div>
+                        <Label htmlFor="cidade">Cidade</Label>
+                        <Input id="cidade" name="cidade" value={formData.cidade} onChange={handleInputChange} placeholder="Sua cidade" />
+                      </div>
+                       <div>
+                        <Label htmlFor="estado">Estado</Label>
+                        <Input id="estado" name="estado" value={formData.estado} onChange={handleInputChange} placeholder="Seu estado" />
+                      </div>
+                    </div>
                   </div>
 
-                  <div>
-                    <Label htmlFor="telefone">Telefone/WhatsApp *</Label>
-                    <Input id="telefone" name="telefone" type="tel" value={formData.telefone} onChange={handleInputChange} placeholder="(11) 99999-9999" required />
-                  </div>
-
+                  {/* --- Estadia --- */}
                   <div className="border-t border-[#6B8E23]/20 pt-4">
                     <h4 className="text-lg font-medium text-[#2F4F4F] mb-4">
                       Informações da Estadia (Opcional)
                     </h4>
-                    
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
                         <Label htmlFor="checkin">Check-in</Label>
@@ -153,15 +249,19 @@ export default function ContatoPage() {
                           <option value="5">5+ pessoas</option>
                         </select>
                       </div>
+                      <div className="md:col-span-3">
+                        <Label htmlFor="placaVeiculo">Placa do Veículo</Label>
+                        <Input id="placaVeiculo" name="placaVeiculo" value={formData.placaVeiculo} onChange={handleInputChange} placeholder="ABC-1234" />
+                      </div>
                     </div>
                   </div>
 
                   <div>
-                    <Label htmlFor="mensagem">Mensagem</Label>
-                    <Textarea id="mensagem" name="mensagem" value={formData.mensagem} onChange={handleInputChange} placeholder="Conte-nos mais sobre sua estadia ideal..." rows={4} />
+                    <Label htmlFor="mensagem">Mensagem Adicional</Label>
+                    <Textarea id="mensagem" name="mensagem" value={formData.mensagem} onChange={handleInputChange} placeholder="Alguma observação ou pedido especial?" rows={4} />
                   </div>
 
-                  <div className="flex flex-col sm:flex-row gap-3">
+                  <div className="flex flex-col sm:flex-row gap-3 pt-4">
                     <Button type="submit" disabled={isSubmitting} className="flex-1 bg-[#25D366] hover:bg-[#20BA5A] text-white flex items-center justify-center gap-2">
                       <MessageCircle className="w-4 h-4" />
                       {isSubmitting ? 'Enviando...' : 'Enviar via WhatsApp'}
@@ -175,7 +275,7 @@ export default function ContatoPage() {
               </CardContent>
             </Card>
             
-            {/* Informações de Contato Direto */}
+            {/* Informações de Contato Direto (sem alterações) */}
             <Card className="border-[#6B8E23]/20">
               <CardContent className="p-6">
                 <h3 className="text-xl font-semibold text-[#2F4F4F] mb-4">
@@ -214,9 +314,8 @@ export default function ContatoPage() {
             </Card>
           </div>
 
-          {/* Coluna da Direita: Informações, Mapa e Dicas */}
+          {/* Coluna da Direita (sem alterações) */}
           <div className="space-y-8">
-            {/* Informações da Pousada */}
             <Card className="border-[#6B8E23]/20">
               <CardContent className="p-6">
                 <h3 className="text-xl font-semibold text-[#2F4F4F] mb-4 flex items-center gap-2">
@@ -246,7 +345,6 @@ export default function ContatoPage() {
               </CardContent>
             </Card>
 
-            {/* Mapa */}
             <Card className="border-[#6B8E23]/20">
               <CardContent className="p-0">
                 <div className="relative h-80 rounded-lg overflow-hidden">
@@ -269,7 +367,6 @@ export default function ContatoPage() {
               </CardContent>
             </Card>
 
-            {/* Dicas de Como Chegar */}
             <Card className="border-[#6B8E23]/20">
               <CardContent className="p-6">
                 <h3 className="text-xl font-semibold text-[#2F4F4F] mb-4">
@@ -303,7 +400,7 @@ export default function ContatoPage() {
         </div>
       </div>
 
-      {/* CTA Section */}
+      {/* CTA Section (sem alterações) */}
       <section className="bg-white py-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto text-center">
           <h3 className="text-3xl font-bold text-[#2F4F4F] mb-4">

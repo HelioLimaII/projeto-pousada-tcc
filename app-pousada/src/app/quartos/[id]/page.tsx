@@ -1,4 +1,3 @@
-// Em: src/app/quartos/[id]/page.tsx
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -12,7 +11,6 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useParams } from 'next/navigation'
 
-// Interface alinhada com o nosso back-end
 interface Quarto {
   id: string;
   numero: number;
@@ -30,9 +28,21 @@ export default function QuartoDetalhePage() {
   const [quarto, setQuarto] = useState<Quarto | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  
+
   const [formData, setFormData] = useState({
     nome: '',
+    cpf: '',
+    rg: '',
+    email: '',
+    telefone: '',
+    profissao: '',
+    endereco: '',
+    bairro: '',
+    cep: '',
+    cidade: '',
+    estado: '',
+    pais: '',
+    placa_carro: '',
     checkin: '',
     checkout: '',
     observacoes: ''
@@ -40,9 +50,7 @@ export default function QuartoDetalhePage() {
 
   useEffect(() => {
     const quartoId = params.id as string;
-    if (quartoId) {
-      fetchQuarto(quartoId);
-    }
+    if (quartoId) fetchQuarto(quartoId);
   }, [params.id]);
 
   const fetchQuarto = async (id: string) => {
@@ -76,17 +84,41 @@ export default function QuartoDetalhePage() {
 
   const handleWhatsAppSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.nome || !formData.checkin || !formData.checkout) {
-      alert('Por favor, preencha todos os campos obrigatórios.');
+    if (!formData.nome || !formData.checkin || !formData.checkout || !formData.cpf) {
+      alert('Por favor, preencha todos os campos obrigatórios (*)');
       return;
     }
-    const message = `Olá! Gostaria de fazer uma reserva na Pousada Zekas.\n\n*Dados da Reserva:*\n- Nome: ${formData.nome}\n- Quarto: ${quarto?.titulo} (Quarto ${quarto?.numero})\n- Check-in: ${new Date(formData.checkin).toLocaleDateString('pt-BR')}\n- Check-out: ${new Date(formData.checkout).toLocaleDateString('pt-BR')}\n- Valor da diária: R$ ${quarto?.preco_diaria}\n${formData.observacoes ? `- Observações: ${formData.observacoes}` : ''}\n\nAguardo retorno para confirmar a disponibilidade!`;
-    const whatsappUrl = `https://wa.me/5583996872334?text=${encodeURIComponent(message)}`; // Substitua pelo número real
+
+    let message = `*SOLICITAÇÃO DE PRÉ-RESERVA - POUSADA ZEKAS*\n\n`;
+    message += `*Hóspede:* ${formData.nome}\n`;
+    message += `*Quarto:* ${quarto?.titulo} (Nº ${quarto?.numero})\n\n`;
+    message += `*Período da Estadia:*\n`;
+    message += `- Check-in: ${new Date(formData.checkin).toLocaleDateString('pt-BR')}\n`;
+    message += `- Check-out: ${new Date(formData.checkout).toLocaleDateString('pt-BR')}\n\n`;
+    message += `*Dados Pessoais:*\n`;
+    message += `- CPF: ${formData.cpf}\n`;
+    message += `- RG: ${formData.rg}\n`;
+    message += `- Profissão: ${formData.profissao}\n\n`;
+    message += `*Contato:*\n`;
+    message += `- Telefone: ${formData.telefone}\n`;
+    message += `- E-mail: ${formData.email}\n\n`;
+    message += `*Endereço:*\n`;
+    message += `- ${formData.endereco}, ${formData.bairro}\n`;
+    message += `- ${formData.cidade} - ${formData.estado}, CEP: ${formData.cep}\n`;
+    message += `- País: ${formData.pais}\n\n`;
+    message += `*Outros:*\n`;
+    message += `- Placa do Carro: ${formData.placa_carro || 'Não informado'}\n`;
+    if (formData.observacoes) {
+      message += `- Observações: ${formData.observacoes}\n`;
+    }
+    message += `\nAguardo confirmação da disponibilidade e próximos passos.`;
+
+    const whatsappUrl = `https://wa.me/5583996872334?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
   };
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center"><p>Carregando quarto...</p></div>;
+    return <div className="min-h-screen flex items-center justify-center"><p>A carregar quarto...</p></div>;
   }
 
   if (!quarto) {
@@ -104,7 +136,6 @@ export default function QuartoDetalhePage() {
 
   return (
     <div>
-      {/* Breadcrumb */}
       <div className="bg-white border-b border-[#6B8E23]/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <Link href="/quartos" className="flex items-center text-[#008080] hover:text-[#006666] transition-colors">
@@ -113,18 +144,12 @@ export default function QuartoDetalhePage() {
           </Link>
         </div>
       </div>
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* Galeria de Imagens */}
           <div className="space-y-4">
             <div className="relative h-96 rounded-lg overflow-hidden shadow-lg">
-              <Image
-                src={allImages[currentImageIndex] || "/placeholder-5t9d5.png"}
-                alt={`${quarto.titulo} - Imagem ${currentImageIndex + 1}`}
-                fill
-                className="object-cover"
-              />
+              <Image src={allImages[currentImageIndex] || "/placeholder-5t9d5.png"} alt={`${quarto.titulo} - Imagem ${currentImageIndex + 1}`} fill className="object-cover" />
             </div>
             {allImages.length > 1 && (
               <div className="grid grid-cols-4 gap-2">
@@ -137,7 +162,7 @@ export default function QuartoDetalhePage() {
             )}
           </div>
 
-          {/* Informações do Quarto */}
+          {/* Informações do Quarto + Formulário */}
           <div className="space-y-6">
             <div>
               <h1 className="text-3xl font-bold text-[#2F4F4F] mb-4">{quarto.titulo}</h1>
@@ -155,15 +180,13 @@ export default function QuartoDetalhePage() {
                 ))}
               </div>
             </div>
-            {/* Formulário de Reserva */}
+
+            {/* Formulário */}
             <Card className="border-[#6B8E23]/20 bg-white">
               <CardContent className="p-6">
-                <h3 className="text-xl font-semibold text-[#2F4F4F] mb-4 flex items-center gap-2"><MessageCircle className="w-5 h-5" />Solicitar Reserva via WhatsApp</h3>
+                <h3 className="text-xl font-semibold text-[#2F4F4F] mb-4 flex items-center gap-2"><MessageCircle className="w-5 h-5" />Solicitar Pré-Reserva via WhatsApp</h3>
                 <form onSubmit={handleWhatsAppSubmit} className="space-y-4">
-                  <div>
-                    <Label htmlFor="nome">Nome Completo *</Label>
-                    <Input id="nome" name="nome" value={formData.nome} onChange={handleInputChange} placeholder="Seu nome completo" required />
-                  </div>
+
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="checkin">Check-in *</Label>
@@ -174,11 +197,80 @@ export default function QuartoDetalhePage() {
                       <Input id="checkout" name="checkout" type="date" value={formData.checkout} onChange={handleInputChange} required />
                     </div>
                   </div>
+
+                  <h4 className="text-lg font-medium text-[#2F4F4F] pt-2">Os seus Dados</h4>
                   <div>
-                    <Label htmlFor="observacoes">Observações</Label>
+                    <Label htmlFor="nome">Nome Completo *</Label>
+                    <Input id="nome" name="nome" value={formData.nome} onChange={handleInputChange} required />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="cpf">CPF *</Label>
+                      <Input id="cpf" name="cpf" value={formData.cpf} onChange={handleInputChange} required />
+                    </div>
+                    <div>
+                      <Label htmlFor="rg">RG/Passaporte</Label>
+                      <Input id="rg" name="rg" value={formData.rg} onChange={handleInputChange} />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="email">E-mail</Label>
+                      <Input id="email" name="email" type="email" value={formData.email} onChange={handleInputChange} />
+                    </div>
+                    <div>
+                      <Label htmlFor="telefone">Telefone</Label>
+                      <Input id="telefone" name="telefone" type="tel" value={formData.telefone} onChange={handleInputChange} />
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="profissao">Profissão</Label>
+                    <Input id="profissao" name="profissao" value={formData.profissao} onChange={handleInputChange} />
+                  </div>
+
+                  <h4 className="text-lg font-medium text-[#2F4F4F] pt-2">Endereço</h4>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="col-span-2">
+                      <Label htmlFor="endereco">Endereço (Rua, Nº)</Label>
+                      <Input id="endereco" name="endereco" value={formData.endereco} onChange={handleInputChange} />
+                    </div>
+                    <div>
+                      <Label htmlFor="bairro">Bairro</Label>
+                      <Input id="bairro" name="bairro" value={formData.bairro} onChange={handleInputChange} />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <Label htmlFor="cep">CEP</Label>
+                      <Input id="cep" name="cep" value={formData.cep} onChange={handleInputChange} />
+                    </div>
+                    <div className="col-span-2">
+                      <Label htmlFor="cidade">Cidade</Label>
+                      <Input id="cidade" name="cidade" value={formData.cidade} onChange={handleInputChange} />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="estado">Estado</Label>
+                      <Input id="estado" name="estado" value={formData.estado} onChange={handleInputChange} />
+                    </div>
+                    <div>
+                      <Label htmlFor="pais">País</Label>
+                      <Input id="pais" name="pais" value={formData.pais} onChange={handleInputChange} />
+                    </div>
+                  </div>
+
+                  <h4 className="text-lg font-medium text-[#2F4F4F] pt-2">Outras Informações</h4>
+                  <div>
+                    <Label htmlFor="placa_carro">Placa do Carro (Opcional)</Label>
+                    <Input id="placa_carro" name="placa_carro" value={formData.placa_carro} onChange={handleInputChange} />
+                  </div>
+                  <div>
+                    <Label htmlFor="observacoes">Observações (Opcional)</Label>
                     <Textarea id="observacoes" name="observacoes" value={formData.observacoes} onChange={handleInputChange} placeholder="Alguma solicitação especial..." rows={3} />
                   </div>
-                  <Button type="submit" className="w-full bg-[#25D366] hover:bg-[#20BA5A] text-white flex items-center gap-2">
+
+                  <Button type="submit" className="w-full bg-[#25D366] hover:bg-[#20BA5A] text-white flex items-center justify-center gap-2">
                     <MessageCircle className="w-4 h-4" />Enviar Solicitação via WhatsApp
                   </Button>
                 </form>
@@ -188,5 +280,5 @@ export default function QuartoDetalhePage() {
         </div>
       </div>
     </div>
-  )
+  );
 }
