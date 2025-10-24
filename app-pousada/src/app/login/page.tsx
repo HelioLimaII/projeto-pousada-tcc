@@ -1,15 +1,17 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Eye, EyeOff, Lock, User, AlertCircle } from 'lucide-react'
-import Link from 'next/link'
-// O useRouter não é mais necessário para o redirecionamento, mas pode ser mantido se usado em outro lugar.
-import { useRouter } from 'next/navigation'
+
+// Passo 1: Importar a função de login centralizada
+import { login } from '@/lib/api'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -41,34 +43,21 @@ export default function LoginPage() {
     }
 
     try {
-      const loginDetails = new URLSearchParams();
-      loginDetails.append('username', formData.username);
-      loginDetails.append('password', formData.password);
+      // Passo 2: Usar a função 'login' do api.ts
+      const data = await login(formData.username, formData.password);
+      
+      // Passo 3: Salvar o token com o nome padronizado 'accessToken'
+      // Isso garante consistência com o resto da nossa implementação.
+      localStorage.setItem('accessToken', data.access_token);
+      
+      // Usar router.push é a prática recomendada no Next.js para navegação
+      // em vez de window.location.href, pois proporciona uma transição mais suave.
+      router.push('/admin/dashboard');
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: loginDetails,
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        // Usando 'authToken' para manter consistência com os outros componentes
-        localStorage.setItem('authToken', data.access_token);
-        
-        // --- MODIFICAÇÃO PRINCIPAL AQUI ---
-        // Força um recarregamento completo da página ao redirecionar,
-        // garantindo que o novo estado de login seja lido por toda a aplicação.
-        window.location.href = '/admin/dashboard';
-        // --- FIM DA MODIFICAÇÃO ---
-
-      } else {
-        const errorData = await response.json();
-        setError(errorData.detail || 'Credenciais inválidas.');
-      }
-    } catch (error) {
-      console.error('Erro no login:', error);
-      setError('Erro de conexão com o servidor.');
+    } catch (err) {
+      console.error('Erro no login:', err);
+      // A mensagem de erro agora vem da nossa função central
+      setError('Credenciais inválidas ou erro de conexão.');
     } finally {
       setIsLoading(false);
     }

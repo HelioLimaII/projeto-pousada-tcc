@@ -1,38 +1,43 @@
 # Em: api-pousada/api.py
-
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware # 1. Importe o middleware
-from routes.quarto import router as quarto_router
+from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
+
+# Importe suas rotas existentes
 from routes.auth import router as auth_router
+from routes.quarto import router as quarto_router
 from routes.reserva import router as reserva_router
+# IMPORTE A NOVA ROTA DE CLIENTES
 from routes.cliente import router as cliente_router
 
-app = FastAPI(
-    title="API da Pousada",
-    description="API para gerenciar os dados da Pousada Fictícia."
-)
+app = FastAPI()
 
-# 2. Defina as origens permitidas (seu front-end)
+# Configuração do CORS (MUITO IMPORTANTE para o frontend comunicar com o backend)
 origins = [
-    "http://localhost:5173",
-    "http://localhost:3000",
+    "http://localhost:3000", # Endereço do seu frontend Next.js
+    # Adicione outros domínios se necessário (ex: o domínio de produção)
 ]
-
-# 3. Adicione o middleware de CORS à sua aplicação
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"], # Permite todos os métodos (GET, POST, etc.)
+    allow_methods=["*"], # Permite todos os métodos (GET, POST, PUT, DELETE, etc.)
     allow_headers=["*"], # Permite todos os cabeçalhos
 )
 
-# O resto do seu código continua o mesmo
-app.include_router(auth_router, tags=["Autenticação"])
-app.include_router(quarto_router, tags=["Quartos"])
-app.include_router(reserva_router, tags=["Reservas"])
-app.include_router(cliente_router, tags=["Clientes"])
+# Servir ficheiros estáticos (para as imagens dos quartos)
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
+# Incluir as rotas
+app.include_router(auth_router, tags=["Autenticação"])
+app.include_router(quarto_router, prefix="/quartos", tags=["Quartos"])
+app.include_router(reserva_router, prefix="/reservas", tags=["Reservas"])
+# INCLUA A NOVA ROTA DE CLIENTES
+app.include_router(cliente_router, prefix="/clientes", tags=["Clientes"])
+
+# Rota raiz (opcional)
 @app.get("/")
-def ler_raiz():
-    return {"mensagem": "Bem-vindo à API da Pousada!"}
+async def root():
+    return {"message": "Bem-vindo à API da Pousada Zekas"}
+
+# Lembre-se de reiniciar o servidor FastAPI após estas alterações!

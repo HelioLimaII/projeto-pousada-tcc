@@ -1,3 +1,4 @@
+// Em: src/app/quartos/[id]/page.tsx
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -10,6 +11,9 @@ import { Wifi, Car, Coffee, Tv, Users, ArrowLeft, MessageCircle } from 'lucide-r
 import Link from 'next/link'
 import Image from 'next/image'
 import { useParams } from 'next/navigation'
+
+// Definindo a URL base da sua API para carregar as imagens
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 interface Quarto {
   id: string;
@@ -29,6 +33,7 @@ export default function QuartoDetalhePage() {
   const [loading, setLoading] = useState(true);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
+  // Estado para o formulário de pré-reserva
   const [formData, setFormData] = useState({
     nome: '',
     cpf: '',
@@ -55,8 +60,8 @@ export default function QuartoDetalhePage() {
 
   const fetchQuarto = async (id: string) => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-      const response = await fetch(`${apiUrl}/quartos/${id}`);
+      // Usamos a mesma URL base da API para buscar os dados do quarto
+      const response = await fetch(`${API_BASE_URL}/quartos/${id}`);
       if (response.ok) {
         const data = await response.json();
         setQuarto(data);
@@ -85,6 +90,8 @@ export default function QuartoDetalhePage() {
   const handleWhatsAppSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.nome || !formData.checkin || !formData.checkout || !formData.cpf) {
+      // Usando um método de notificação mais moderno que alert, se disponível
+      // Por enquanto, mantemos o alert por simplicidade
       alert('Por favor, preencha todos os campos obrigatórios (*)');
       return;
     }
@@ -149,13 +156,26 @@ export default function QuartoDetalhePage() {
           {/* Galeria de Imagens */}
           <div className="space-y-4">
             <div className="relative h-96 rounded-lg overflow-hidden shadow-lg">
-              <Image src={allImages[currentImageIndex] || "/placeholder-5t9d5.png"} alt={`${quarto.titulo} - Imagem ${currentImageIndex + 1}`} fill className="object-cover" />
+              {/* CORREÇÃO APLICADA AQUI */}
+              <Image 
+                src={allImages.length > 0 ? `${API_BASE_URL}${allImages[currentImageIndex]}` : "/placeholder.jpg"} 
+                alt={`${quarto.titulo} - Imagem ${currentImageIndex + 1}`} 
+                fill 
+                className="object-cover" 
+                priority
+              />
             </div>
             {allImages.length > 1 && (
               <div className="grid grid-cols-4 gap-2">
                 {allImages.map((image, index) => (
                   <button key={index} onClick={() => setCurrentImageIndex(index)} className={`relative h-20 rounded-lg overflow-hidden border-2 transition-colors ${currentImageIndex === index ? 'border-[#008080]' : 'border-transparent'}`}>
-                    <Image src={image} alt={`Miniatura ${index + 1}`} fill className="object-cover" />
+                    {/* E AQUI TAMBÉM */}
+                    <Image 
+                      src={`${API_BASE_URL}${image}`} 
+                      alt={`Miniatura ${index + 1}`} 
+                      fill 
+                      className="object-cover" 
+                    />
                   </button>
                 ))}
               </div>
@@ -282,3 +302,4 @@ export default function QuartoDetalhePage() {
     </div>
   );
 }
+

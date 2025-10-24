@@ -1,178 +1,182 @@
 // Em: src/app/page.tsx
+'use client';
 
-'use client'
+import { useState, useEffect } from 'react';
+import { Button } from "@/components/ui/button";
+// Importa os ícones necessários
+import { MapPin, Phone, Mail, Wifi, Coffee, Car, Wind, Tv, ShowerHead } from 'lucide-react';
+import Link from 'next/link';
+import Image from 'next/image';
+import QuartoCard from '@/components/ui/QuartoCard'; // **** Ajuste o caminho se necessário ****
+import { getQuartos } from '@/lib/api';
 
-import { useState, useEffect } from 'react'
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { MapPin, Phone, Mail, Wifi, Coffee } from 'lucide-react' 
-import Link from 'next/link'
-import Image from 'next/image'
-
+// Interface Quarto (mantida)
 interface Quarto {
   id: string;
   numero: number;
   titulo: string;
   descricao: string;
-  fotos: string[];
+  preco_diaria: number;
+  capacidade_hospedes: number;
+  fotos?: string[];
+  comodidades: string[];
   status: string;
 }
 
 export default function HomePage() {
-  const [quartosDestaque, setQuartosDestaque] = useState<Quarto[]>([])
-  const [loading, setLoading] = useState(true)
+  const [quartosDestaque, setQuartosDestaque] = useState<Quarto[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
+  // Lógica para buscar quartos (mantida)
   useEffect(() => {
     const fetchQuartosDestaque = async () => {
+      setLoading(true);
+      setError('');
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-        const response = await fetch(`${apiUrl}/quartos`);
-        if (!response.ok) throw new Error('Falha ao buscar quartos');
-        const data: Quarto[] = await response.json();
-        setQuartosDestaque(data.slice(0, 3));
-      } catch (error) {
-        console.error('Erro ao buscar quartos:', error);
+        const todosQuartos = await getQuartos();
+        if (Array.isArray(todosQuartos)) {
+            setQuartosDestaque(todosQuartos.slice(0, 3));
+        } else {
+            console.error("API não retornou um array de quartos:", todosQuartos);
+            setError('Formato de dados inesperado recebido da API.');
+            setQuartosDestaque([]);
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Falha ao buscar quartos em destaque.');
+        console.error('Erro ao buscar quartos:', err);
       } finally {
         setLoading(false);
       }
     };
     fetchQuartosDestaque();
-  }, [])
+  }, []);
 
   return (
     <div>
-      {/* Hero Section */}
+      {/* Hero Section (mantida) */}
       <section className="relative h-[70vh] flex items-center justify-center">
-        <div className="absolute inset-0">
+         {/* ... (código mantido) ... */}
+         <div className="absolute inset-0">
+           {/* LEMBRE-SE de substituir pela URL da sua imagem Cloudinary ou manter na pasta public se preferir */}
           <Image
-            src="/imagem-pousada.jpg"
+            src="https://res.cloudinary.com/dd2qpbedy/image/upload/v1761314524/WhatsApp_Image_2022-03-10_at_07.14.40_3_eq5bvv.jpg"
             alt="Pousada Zekas"
             fill
             className="object-cover"
             priority
+            quality={80}
           />
-          <div className="absolute inset-0 bg-black/40"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent"></div>
         </div>
         <div className="relative z-10 text-center text-white px-4">
-          <h2 className="text-5xl md:text-6xl font-bold mb-4">
-            Bem-vindo à Pousada Zekas
-          </h2>
-          <p className="text-xl md:text-2xl mb-8 max-w-2xl mx-auto">
-            Sua experiência de tranquilidade e conexão com a natureza
-          </p>
-          <Link href="/quartos">
-            <Button size="lg" className="bg-[#008080] hover:bg-[#006666] text-white px-8 py-3 text-lg">
-              Conheça Nossos Quartos
-            </Button>
-          </Link>
+          <h2 className="text-5xl md:text-6xl font-bold mb-4 drop-shadow-lg">Bem-vindo à Pousada Zekas</h2>
+          <p className="text-xl md:text-2xl mb-8 max-w-2xl mx-auto drop-shadow-md">Sua experiência de tranquilidade e conexão com a natureza</p>
+          <Link href="/quartos"><Button size="lg" className="bg-[#008080] hover:bg-[#006666] text-white px-8 py-3 text-lg shadow-md hover:shadow-lg transition-shadow">Conheça Nossos Quartos</Button></Link>
         </div>
       </section>
 
-      {/* Quartos em Destaque */}
+      {/* Quartos em Destaque (mantido) */}
       <section className="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-        <div className="text-center mb-12">
-          <h3 className="text-3xl font-bold text-[#2F4F4F] mb-4">
-            Nossas Acomodações em Destaque
-          </h3>
-          <p className="text-lg text-[#2F4F4F]/80 max-w-2xl mx-auto">
-            Conheça alguns de nossos quartos mais procurados, cada um pensado para proporcionar máximo conforto e tranquilidade.
-          </p>
+         {/* ... (código mantido, usando QuartoCard) ... */}
+         <div className="text-center mb-12">
+          <h3 className="text-3xl font-bold text-[#2F4F4F] mb-4">Nossas Acomodações em Destaque</h3>
+          <p className="text-lg text-[#2F4F4F]/80 max-w-2xl mx-auto">Conheça alguns de nossos quartos mais procurados.</p>
         </div>
-        {loading ? (
-          <p className="text-center">Carregando acomodações...</p>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {quartosDestaque.map((quarto) => (
-              <Card key={quarto.id} className="overflow-hidden hover:shadow-lg transition-shadow border-[#6B8E23]/20">
-                <div className="relative h-48">
-                  <Image
-                    src={quarto.fotos[0] || "/placeholder.png"}
-                    alt={quarto.titulo}
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-                <CardContent className="p-6 flex flex-col">
-                  <h4 className="text-xl font-semibold text-[#2F4F4F] mb-2">
-                    {quarto.titulo}
-                  </h4>
-                  <p className="text-[#2F4F4F]/80 mb-4 line-clamp-2 flex-grow">
-                    {quarto.descricao}
-                  </p>
-                  <Link href={`/quartos/${quarto.id}`} className="mt-auto">
-                    <Button className="w-full bg-[#6B8E23] hover:bg-[#5a7a1f] text-white">
-                      Ver Detalhes
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
-            ))}
+        {loading ? ( <p className="text-center text-gray-500">A carregar acomodações...</p>
+        ) : error ? ( <p className="text-center text-red-500">{error}</p>
+        ) : quartosDestaque.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {quartosDestaque.map((quarto) => ( <QuartoCard key={quarto.id} quarto={quarto} /> ))}
           </div>
-        )}
+        ) : ( <p className="text-center text-gray-500">Nenhuma acomodação em destaque disponível.</p> )}
       </section>
 
-      {/* Sobre a Pousada Zekas */}
+      {/* Sobre a Pousada Zekas (MODIFICADO) */}
       <section className="bg-white py-16 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-4xl mx-auto text-center">
+        <div className="max-w-5xl mx-auto text-center"> {/* Aumentado max-w para acomodar mais itens */}
           <h3 className="text-3xl font-bold text-[#2F4F4F] mb-6">
-            Sobre a Pousada Zekas
+            Conforto e Natureza na Pousada Zekas
           </h3>
-          <p className="text-lg text-[#2F4F4F]/80 leading-relaxed mb-8">
-            Localizada em meio à natureza exuberante, a Pousada Zekas oferece uma experiência única de hospedagem, 
-            combinando o charme rústico com o conforto moderno. Nossos quartos foram cuidadosamente projetados para 
-            proporcionar momentos de paz e descanso, enquanto você se reconecta com a natureza e consigo mesmo.
+          <p className="text-lg text-[#2F4F4F]/80 leading-relaxed mb-12"> {/* Aumentado mb */}
+            Desfrute de uma estadia tranquila em meio à natureza com as comodidades que você precisa para relaxar.
           </p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
-            <div>
-              <div className="w-16 h-16 bg-[#6B8E23]/10 rounded-full flex items-center justify-center mx-auto mb-4">
+          {/* Grelha de Comodidades Atualizada */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-8 text-center"> {/* Ajustada grelha responsiva */}
+            {/* Localização */}
+            <div className="flex flex-col items-center">
+              <div className="w-16 h-16 bg-[#6B8E23]/10 rounded-full flex items-center justify-center mb-4 transition-transform hover:scale-110">
                 <MapPin className="w-8 h-8 text-[#6B8E23]" />
               </div>
-              <h4 className="font-semibold text-[#2F4F4F] mb-2">Localização Privilegiada</h4>
-              <p className="text-[#2F4F4F]/70">Em meio à natureza, longe do agito da cidade</p>
+              <h4 className="font-semibold text-base text-[#2F4F4F] mb-1">Localização</h4>
+              <p className="text-sm text-[#2F4F4F]/70">Em meio à natureza</p>
             </div>
-            <div>
-              <div className="w-16 h-16 bg-[#6B8E23]/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            {/* Café Grátis */}
+            <div className="flex flex-col items-center">
+              <div className="w-16 h-16 bg-[#6B8E23]/10 rounded-full flex items-center justify-center mb-4 transition-transform hover:scale-110">
                 <Coffee className="w-8 h-8 text-[#6B8E23]" />
               </div>
-              <h4 className="font-semibold text-[#2F4F4F] mb-2">Café da Manhã</h4>
-              <p className="text-[#2F4F4F]/70">Produtos frescos e regionais todos os dias</p>
+              <h4 className="font-semibold text-base text-[#2F4F4F] mb-1">Café da Manhã Grátis</h4>
+              <p className="text-sm text-[#2F4F4F]/70">Produtos frescos e regionais</p>
             </div>
-            <div>
-              <div className="w-16 h-16 bg-[#6B8E23]/10 rounded-full flex items-center justify-center mx-auto mb-4">
+             {/* Estacionamento Grátis */}
+             <div className="flex flex-col items-center">
+              <div className="w-16 h-16 bg-[#6B8E23]/10 rounded-full flex items-center justify-center mb-4 transition-transform hover:scale-110">
+                <Car className="w-8 h-8 text-[#6B8E23]" />
+              </div>
+              <h4 className="font-semibold text-base text-[#2F4F4F] mb-1">Estacionamento Grátis</h4>
+              <p className="text-sm text-[#2F4F4F]/70">Segurança para seu veículo</p>
+            </div>
+             {/* Wi-Fi */}
+             <div className="flex flex-col items-center">
+              <div className="w-16 h-16 bg-[#6B8E23]/10 rounded-full flex items-center justify-center mb-4 transition-transform hover:scale-110">
                 <Wifi className="w-8 h-8 text-[#6B8E23]" />
               </div>
-              <h4 className="font-semibold text-[#2F4F4F] mb-2">Comodidades Modernas</h4>
-              <p className="text-[#2F4F4F]/70">Wi-Fi, ar-condicionado e tudo que você precisa</p>
+              <h4 className="font-semibold text-base text-[#2F4F4F] mb-1">Wi-Fi</h4>
+              <p className="text-sm text-[#2F4F4F]/70">Conecte-se com tranquilidade</p>
             </div>
+             {/* Ar Condicionado */}
+            <div className="flex flex-col items-center">
+              <div className="w-16 h-16 bg-[#6B8E23]/10 rounded-full flex items-center justify-center mx-auto mb-4 transition-transform hover:scale-110">
+                <Wind className="w-8 h-8 text-[#6B8E23]" /> {/* Ícone para Ar Condicionado */}
+              </div>
+              <h4 className="font-semibold text-base text-[#2F4F4F] mb-1">Ar Condicionado</h4>
+              <p className="text-sm text-[#2F4F4F]/70">Conforto térmico garantido</p>
+            </div>
+            {/* TV com Controle */}
+             <div className="flex flex-col items-center">
+              <div className="w-16 h-16 bg-[#6B8E23]/10 rounded-full flex items-center justify-center mx-auto mb-4 transition-transform hover:scale-110">
+                <Tv className="w-8 h-8 text-[#6B8E23]" />
+              </div>
+              <h4 className="font-semibold text-base text-[#2F4F4F] mb-1">TV com Controle</h4>
+              <p className="text-sm text-[#2F4F4F]/70">Entretenimento no quarto</p>
+            </div>
+             {/* Chuveiro Elétrico */}
+             <div className="flex flex-col items-center">
+              <div className="w-16 h-16 bg-[#6B8E23]/10 rounded-full flex items-center justify-center mx-auto mb-4 transition-transform hover:scale-110">
+                <ShowerHead className="w-8 h-8 text-[#6B8E23]" /> {/* Ícone para Chuveiro */}
+              </div>
+              <h4 className="font-semibold text-base text-[#2F4F4F] mb-1">Chuveiro Elétrico</h4>
+              <p className="text-sm text-[#2F4F4F]/70">Banho quente e relaxante</p>
+            </div>
+             {/* Pode adicionar mais itens aqui se precisar */}
           </div>
         </div>
       </section>
 
-      {/* Contato Rápido */}
+      {/* Contato Rápido (mantida) */}
       <section className="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-        <div className="bg-[#008080] rounded-2xl p-8 md:p-12 text-center text-white">
-          <h3 className="text-3xl font-bold mb-4">
-            Pronto para sua experiência na Pousada Zekas?
-          </h3>
-          <p className="text-xl mb-8 opacity-90">
-            Entre em contato conosco e reserve já suas datas
-          </p>
+        {/* ... (código mantido) ... */}
+         <div className="bg-[#008080] rounded-2xl p-8 md:p-12 text-center text-white shadow-lg">
+          <h3 className="text-3xl font-bold mb-4">Pronto para sua experiência na Pousada Zekas?</h3>
+          <p className="text-xl mb-8 opacity-90">Entre em contato conosco e reserve já suas datas</p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/contato">
-              <Button size="lg" variant="secondary" className="bg-white text-[#008080] hover:bg-gray-100">
-                Fazer Reserva
-              </Button>
-            </Link>
-            <a href="tel:+5511999999999">
-              {/* BOTÃO CORRIGIDO AQUI */}
-              <Button size="lg" variant="outline" className="bg-transparent border-white text-white hover:bg-white hover:text-[#008080]">
-                <Phone className="w-4 h-4 mr-2" />
-                Ligar Agora
-              </Button>
-            </a>
+            <Link href="/contato"><Button size="lg" variant="secondary" className="bg-white text-[#008080] hover:bg-gray-100 shadow hover:shadow-md transition-all">Ver Contato e Reservar</Button></Link>
+            <a href="tel:+5583996872334"><Button size="lg" variant="outline" className="bg-transparent border-white text-white hover:bg-white/10 shadow hover:shadow-md transition-all"><Phone className="w-4 h-4 mr-2" />Ligar Agora (WhatsApp)</Button></a>
           </div>
         </div>
       </section>
     </div>
   )
 }
+

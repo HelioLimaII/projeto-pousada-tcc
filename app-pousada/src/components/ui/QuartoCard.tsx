@@ -7,6 +7,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Wifi, Car, Coffee, Tv, Users } from 'lucide-react';
 
+// Define a URL base da API para construir o caminho da imagem
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
 interface Quarto {
   id: string;
   numero: number;
@@ -14,76 +17,94 @@ interface Quarto {
   descricao: string;
   preco_diaria: number;
   capacidade_hospedes: number;
-  fotos: string[];
+  fotos?: string[]; // Torna fotos opcional para segurança
   comodidades: string[];
   status: string;
 }
 
 const getComodidadeIcon = (comodidade: string) => {
-  // ... (código da função getComodidadeIcon)
+  // Implemente esta função se precisar dela no cartão
+  switch (comodidade?.toLowerCase()) {
+    case 'wi-fi': case 'wifi': return <Wifi className="w-4 h-4 mr-1 text-[#6B8E23]" />;
+    case 'estacionamento': return <Car className="w-4 h-4 mr-1 text-[#6B8E23]" />;
+    case 'café da manhã': return <Coffee className="w-4 h-4 mr-1 text-[#6B8E23]" />;
+    case 'tv': return <Tv className="w-4 h-4 mr-1 text-[#6B8E23]" />;
+    default: return null;
+  }
 };
 
-// --- NOVA FUNÇÃO PARA ESTILIZAR O STATUS ---
+// --- FUNÇÃO PARA ESTILIZAR O STATUS (mantida) ---
 const StatusBadge = ({ status }: { status: string }) => {
   const statusInfo = {
     disponivel: { text: "Disponível", color: "bg-green-500" },
     ocupado: { text: "Ocupado", color: "bg-red-500" },
-    manutencao: { text: "Em Manutenção", color: "bg-yellow-500" },
+    manutencao: { text: "Manutenção", color: "bg-yellow-500 text-black" }, // Ajuste para melhor contraste
   };
-
-  const info = statusInfo[status.toLowerCase() as keyof typeof statusInfo] || { text: status, color: "bg-gray-500" };
+  // Usa 'outline' como fallback para status desconhecidos
+  const info = statusInfo[status?.toLowerCase() as keyof typeof statusInfo] || { text: status || 'Indefinido', color: "bg-gray-400" };
 
   return (
-    <span className={`${info.color} text-white px-3 py-1 rounded-full text-xs font-medium`}>
+    <span className={`inline-block ${info.color} text-white px-2.5 py-0.5 rounded-full text-xs font-semibold`}>
       {info.text}
     </span>
   );
 };
 
 export default function QuartoCard({ quarto }: { quarto: Quarto }) {
-  const isDisponivel = quarto.status.toLowerCase() === 'disponivel';
+  const isDisponivel = quarto.status?.toLowerCase() === 'disponivel';
+
+  // --- LÓGICA DA IMAGEM ATUALIZADA ---
+  const fotoPath = quarto.fotos && quarto.fotos.length > 0 && quarto.fotos[0];
+  const imageUrl = fotoPath
+                   ? `${API_BASE_URL}${fotoPath}`
+                   : "/placeholder-5t9d5.png";
 
   return (
-    <Card className="overflow-hidden flex flex-col hover:shadow-xl transition-all duration-300 border-[#6B8E23]/20 group">
-      <div className="relative h-64 overflow-hidden">
-        <Link href={`/quartos/${quarto.id}`}>
-          <Image
-            src={quarto.fotos[0] || "/placeholder-5t9d5.png"}
-            alt={quarto.titulo}
-            fill
-            className="object-cover group-hover:scale-105 transition-transform duration-300"
-          />
+    <Card className="overflow-hidden flex flex-col hover:shadow-xl transition-all duration-300 border border-gray-200 group h-full">
+      <div className="relative h-48 sm:h-56 overflow-hidden">
+        {/* === CORREÇÃO: Removido legacyBehavior e a tag <a> interna === */}
+        <Link href={`/quartos/${quarto.id}`} className="block w-full h-full">
+            <Image
+              src={imageUrl}
+              alt={`Foto principal do quarto ${quarto.titulo}`}
+              fill
+              className="object-cover group-hover:scale-105 transition-transform duration-300"
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+              onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder-5t9d5.png'; }}
+              priority={false}
+            />
         </Link>
-        {/* --- ETIQUETA DE STATUS ADICIONADA AQUI --- */}
-        <div className="absolute top-4 left-4">
+        {/* Etiqueta de Status */}
+        <div className="absolute top-3 left-3 z-10">
           <StatusBadge status={quarto.status} />
         </div>
       </div>
-      
-      <CardContent className="p-6 flex flex-col flex-grow">
-        <h3 className="text-xl font-bold text-[#2F4F4F] mb-2">{quarto.titulo}</h3>
-        <p className="text-[#2F4F4F]/80 mb-4 line-clamp-3 flex-grow">{quarto.descricao}</p>
-        
-        {/* ... (código das comodidades, preço e capacidade) ... */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-1 text-sm text-[#2F4F4F]/70">
-            <Users className="w-4 h-4" />
-            <span>Até {quarto.capacidade_hospedes} hóspedes</span>
+
+      <CardContent className="p-4 flex flex-col flex-grow">
+        <h3 className="text-lg font-semibold text-[#2F4F4F] mb-1 truncate">{quarto.titulo}</h3>
+        <p className="text-sm text-[#2F4F4F]/80 mb-3 line-clamp-2 flex-grow">{quarto.descricao}</p>
+
+        <div className="flex items-center justify-between text-sm mb-3">
+          <div className="flex items-center gap-1 text-[#2F4F4F]/80">
+            <Users className="w-4 h-4 text-[#6B8E23]" />
+            <span>Até {quarto.capacidade_hospedes}</span>
           </div>
-          <span className="text-2xl font-bold text-[#008080]">
-            R$ {quarto.preco_diaria}
-            <span className="text-base font-normal text-[#2F4F4F]/60 ml-1">/diária</span>
+          <span className="text-lg font-bold text-[#008080]">
+            R$ {quarto.preco_diaria?.toFixed(2)}
+            <span className="text-xs font-normal text-[#2F4F4F]/60 ml-1">/diária</span>
           </span>
         </div>
-        
-        <div className="mt-auto pt-4 border-t border-gray-200/60">
+
+        <div className="mt-auto pt-3 border-t border-gray-200/60">
+           {/* === CORREÇÃO: Removido legacyBehavior e a tag <a> interna === */}
+           {/* O botão agora está dentro do Link, que renderizará o <a> */}
           <Link href={`/quartos/${quarto.id}`}>
-            {/* --- LÓGICA DO BOTÃO ATUALIZADA --- */}
-            <Button 
-              className="w-full bg-[#6B8E23] hover:bg-[#5a7a1f] text-white transition-colors disabled:bg-gray-400"
+             <Button
+              className="w-full bg-[#6B8E23] hover:bg-[#5a7a1f] text-white transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
               disabled={!isDisponivel}
+              aria-label={isDisponivel ? `Ver detalhes do quarto ${quarto.titulo}` : `Quarto ${quarto.titulo} indisponível`}
             >
-              {isDisponivel ? 'Ver Detalhes e Reservar' : 'Indisponível'}
+              {isDisponivel ? 'Ver Detalhes' : 'Indisponível'}
             </Button>
           </Link>
         </div>
@@ -91,3 +112,4 @@ export default function QuartoCard({ quarto }: { quarto: Quarto }) {
     </Card>
   );
 }
+

@@ -1,8 +1,11 @@
 // Em: src/app/quartos/page.tsx
+'use client'; // Necessário para useEffect e useState
 
-import QuartoCard from "@/components/ui/QuartoCard";
+import { useState, useEffect } from 'react';
+import QuartoCard from "@/components/ui/QuartoCard"; // Importa o seu componente de cartão
+import { getQuartos } from '@/lib/api'; // Importa a função da API
 
-// A interface permanece a mesma
+// Interface para os dados do quarto (pode ser partilhada)
 interface Quarto {
   id: string;
   numero: number;
@@ -10,47 +13,61 @@ interface Quarto {
   descricao: string;
   preco_diaria: number;
   capacidade_hospedes: number;
-  fotos: string[];
+  fotos?: string[]; // Inclui o campo fotos
   comodidades: string[];
   status: string;
 }
 
-async function getQuartos() {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-    const res = await fetch(`${apiUrl}/quartos`, { cache: 'no-store' });
-    if (!res.ok) {
-        console.error("Falha ao buscar quartos da API");
-        return [];
-    }
-    const data: Quarto[] = await res.json();
-    return data; // MODIFICAÇÃO: Removemos o filtro, agora retorna todos os quartos
-}
+export default function QuartosPage() {
+  const [todosQuartos, setTodosQuartos] = useState<Quarto[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-export default async function QuartosPage() {
-  const todosOsQuartos = await getQuartos();
+  useEffect(() => {
+    const fetchTodosQuartos = async () => {
+      setLoading(true);
+      setError('');
+      try {
+        const data = await getQuartos(); // Busca todos os quartos
+        setTodosQuartos(data);
+      } catch (err) {
+        setError('Falha ao carregar a lista de quartos.');
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTodosQuartos();
+  }, []); // Executa apenas uma vez
 
   return (
-    <div>
-      <section className="bg-white py-16 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto text-center">
-          <h2 className="text-4xl font-bold text-[#2F4F4F] mb-4">Conheça Nossas Acomodações</h2>
-          <p className="text-lg text-[#2F4F4F]/80 max-w-2xl mx-auto">
-            Cada quarto foi cuidadosamente projetado para oferecer máximo conforto e uma experiência única.
+    <div className="min-h-screen bg-[#F5F5DC] py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto">
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold tracking-tight text-[#2F4F4F] sm:text-5xl">
+            Nossas Acomodações
+          </h1>
+          <p className="mt-4 text-xl text-[#2F4F4F]/80">
+            Explore nossos quartos e encontre o refúgio perfeito para sua estadia.
           </p>
         </div>
-      </section>
 
-      <section className="py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-        {todosOsQuartos.length === 0 ? (
-          <div className="text-center py-16"><p>Nenhum quarto cadastrado no momento.</p></div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {todosOsQuartos.map((quarto) => (
+        {/* Grelha de Todos os Quartos */}
+        {loading && <p className="text-center">A carregar quartos...</p>}
+        {error && <p className="text-center text-red-500">{error}</p>}
+        {!loading && !error && todosQuartos.length > 0 && (
+          <div className="grid grid-cols-1 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 xl:gap-x-8">
+            {todosQuartos.map((quarto) => (
+              // Usa o QuartoCard para renderizar cada quarto
               <QuartoCard key={quarto.id} quarto={quarto} />
             ))}
           </div>
         )}
-      </section>
+         {!loading && todosQuartos.length === 0 && !error && (
+             <p className="text-center text-gray-500">Nenhum quarto encontrado.</p>
+         )}
+      </div>
     </div>
   );
 }
