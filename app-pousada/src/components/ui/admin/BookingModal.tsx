@@ -117,7 +117,8 @@ export default function BookingModal({ isOpen, onClose, onSave, reservaId, quart
   // --- Handlers ---
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
-    // @ts-ignore
+    
+    // [CORRIGIDO] Removida a diretiva @ts-expect-error desnecessária
     setFormData(prev => ({
       ...prev,
       [name]: type === 'number' ? parseFloat(value) || 0 : value,
@@ -159,13 +160,16 @@ export default function BookingModal({ isOpen, onClose, onSave, reservaId, quart
 
     try {
       if (reservaId) {
+        // Agora 'dataToSubmit' é compatível com 'ReservaUpdatePayload'
         await updateReserva(reservaId, dataToSubmit);
       } else {
+        // E também é compatível com 'ReservaPayload' (desde que todos os campos obrigatórios estejam lá)
         await createReserva(dataToSubmit);
       }
       onSave(); // Recarrega o mapa
       onClose(); // Fecha o modal
     } catch (err) {
+      // [CORRIGIDO] Removida a diretiva @ts-expect-error desnecessária
       setError(err instanceof Error ? err.message : 'Ocorreu um erro.');
     } finally {
       setIsLoading(false);

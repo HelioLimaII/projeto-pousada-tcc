@@ -8,10 +8,10 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 // Ajuste os campos conforme o seu formulário!
 export interface ClientePayload {
   nome: string;
-  email?: string;
-  telefone?: string;
-  cpf?: string;
-  observacoes?: string;
+  email?: string | null; // [CORRIGIDO] Adicionado | null
+  telefone?: string | null; // [CORRIGIDO] Adicionado | null
+  cpf?: string | null; // [CORRIGIDO] Adicionado | null
+  observacoes?: string | null; // [CORRIGIDO] Adicionado | null
 }
 
 // Interface para os dados de uma Reserva (para create/update)
@@ -21,11 +21,12 @@ export interface ReservaPayload {
   data_checkin: string | null;
   data_checkout: string | null;
   status: string;
-  valor_total?: number | null;
-  observacoes?: string;
+  valor_total?: number | null; // Já estava correto
+  observacoes?: string | null; // [CORRIGIDO] Adicionado | null
 }
 
 // Interface para atualização parcial de Reserva
+// Agora aceita Partial de tipos que incluem null
 export type ReservaUpdatePayload = Partial<ReservaPayload>;
 
 // --- FIM DAS NOVAS INTERFACES ---
@@ -227,3 +228,4 @@ export const deleteCliente = async (id: string) => {
   }
   return true;
 };
+
