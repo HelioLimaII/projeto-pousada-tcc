@@ -1,4 +1,5 @@
 # Em: api-pousada/api.py
+import os # Necessário para ler variáveis de ambiente
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
@@ -12,20 +13,30 @@ from routes.cliente import router as cliente_router
 
 app = FastAPI()
 
-# Configuração do CORS (MUITO IMPORTANTE para o frontend comunicar com o backend)
+# --- Configuração do CORS (MUITO IMPORTANTE) ---
+
+# Pega a URL do frontend a partir das variáveis de ambiente do Render
+# Esta variável (FRONTEND_URL) será algo como "https://pousada-zekas-site.onrender.com"
+frontend_url = os.environ.get("FRONTEND_URL")
+
+# Lista de origens permitidas
 origins = [
-    "http://localhost:3000", # Endereço do seu frontend Next.js
-    # Adicione outros domínios se necessário (ex: o domínio de produção)
+    "http://localhost:3000", # Para desenvolvimento local (seu Next.js)
 ]
+
+# Adiciona a URL de produção (do Render) à lista, se ela existir
+if frontend_url:
+    origins.append(frontend_url)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=origins, # Usa a lista dinâmica
     allow_credentials=True,
     allow_methods=["*"], # Permite todos os métodos (GET, POST, PUT, DELETE, etc.)
     allow_headers=["*"], # Permite todos os cabeçalhos
 )
 
-# Servir ficheiros estáticos (para as imagens dos quartos)
+# Servir ficheiros estáticos (Corretamente comentado, como corrigimos antes)
 # app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Incluir as rotas
