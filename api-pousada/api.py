@@ -26,7 +26,7 @@ app.add_middleware(
 )
 
 # Servir ficheiros estáticos (para as imagens dos quartos)
-app.mount("/static", StaticFiles(directory="static"), name="static")
+# app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Incluir as rotas
 app.include_router(auth_router, tags=["Autenticação"])
