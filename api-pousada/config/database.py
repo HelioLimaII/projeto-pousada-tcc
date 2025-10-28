@@ -31,7 +31,7 @@ except Exception as e:
 
 # Seleciona o banco de dados "pousada_db"
 # (O seu código original usava "pousada_db", vamos manter)
-db = client.pousada_db
+db = client.pousada_zekas
 
 # Cria referências para as coleções que vamos usar
 collection_quartos = db.quartos
