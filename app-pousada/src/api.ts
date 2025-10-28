@@ -1,6 +1,18 @@
-// src/lib/api.ts
-
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
+// --- [NOVA INTERFACE] ---
+// Define a estrutura dos dados ao criar/atualizar um cliente
+// Por favor, ajuste os campos (ex: email, cpf) para
+// bater exatamente com o que seu formulário envia.
+export interface ClientePayload {
+  nome: string;
+  email?: string;
+  telefone?: string;
+  cpf?: string;
+  observacoes?: string;
+}
+// --- FIM DA NOVA INTERFACE ---
+
 
 // Função auxiliar para pegar o token de forma segura no client-side
 const getAuthToken = (): string | null => {
@@ -179,7 +191,8 @@ export const getClienteById = async (id: string) => {
   return response.json();
 };
 
-export const createCliente = async (clienteData: any) => {
+// [CORRIGIDO] Trocado 'any' por 'ClientePayload'
+export const createCliente = async (clienteData: ClientePayload) => {
   const token = getAuthToken();
   const response = await fetch(`${API_BASE_URL}/clientes`, {
     method: 'POST',
@@ -196,7 +209,9 @@ export const createCliente = async (clienteData: any) => {
   return response.json();
 };
 
-export const updateCliente = async (id: string, clienteData: any) => {
+// [CORRIGIDO] Trocado 'any' por 'Partial<ClientePayload>'
+// 'Partial' significa que pode ser um objeto com *alguns* dos campos de ClientePayload
+export const updateCliente = async (id: string, clienteData: Partial<ClientePayload>) => {
   const token = getAuthToken();
   const response = await fetch(`${API_BASE_URL}/clientes/${id}`, {
     method: 'PUT',
