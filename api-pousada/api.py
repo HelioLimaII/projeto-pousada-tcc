@@ -52,3 +52,4 @@ async def root():
     return {"message": "Bem-vindo à API da Pousada Zekas"}
 
 # Lembre-se de reiniciar o servidor FastAPI após estas alterações!
+##
