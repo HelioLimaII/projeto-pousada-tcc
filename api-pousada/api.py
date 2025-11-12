@@ -21,7 +21,7 @@ frontend_url = os.environ.get("FRONTEND_URL")
 
 # Lista de origens permitidas
 origins = [
-    "http://localhost:3000", # Para desenvolvimento local (seu Next.js)
+    #"http://localhost:3000", # Para desenvolvimento local (seu Next.js)
     "https://projeto-pousada-front.onrender.com",
 ]
 
