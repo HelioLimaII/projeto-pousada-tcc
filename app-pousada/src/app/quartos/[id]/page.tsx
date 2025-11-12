@@ -25,12 +25,15 @@ interface Quarto {
   fotos?: string[];
   comodidades: string[];
   status: string;
+
 }
+/*
 interface QuartosDetalhesProps {
   params: {
     id: string;
   };
 }
+  */
 const getComodidadeIcon = (comodidade: string) => {
   const com = comodidade.trim().toLowerCase();
   if (com === 'wi-fi' || com === 'wifi') { return <Wifi className="w-5 h-5 mr-2 text-[#6B8E23]" />; }
@@ -41,7 +44,7 @@ const getComodidadeIcon = (comodidade: string) => {
 };
 
 
-export default async function QuartosDetalhesPage({ params }: QuartosDetalhesProps) {
+export default async function QuartosDetalhesPage({ params }: { params: { id: string } }) {
   // (Toda a lógica de 'fetch' e 'error' permanece igual)
   const { id } = params;
   let quarto: Quarto | null = null;
