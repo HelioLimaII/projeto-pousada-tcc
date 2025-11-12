@@ -10,24 +10,28 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div>
             <h4 className="text-xl font-bold mb-4">Pousada Zekas</h4>
+            {/* --- MODIFICAÇÃO: Slogan Atualizado --- */}
             <p className="text-white/80 mb-4">
-              Sua experiência de tranquilidade e conexão com a natureza.
+              Sua casa fora de casa desde 2005.
             </p>
           </div>
           <div>
             <h4 className="text-lg font-semibold mb-4">Contato</h4>
             <div className="space-y-2 text-white/80">
+              {/* --- MODIFICAÇÃO: Endereço Atualizado --- */}
               <div className="flex items-center gap-2">
                 <MapPin className="w-4 h-4" />
-                <span>Rua da Natureza, 123 - Serra da Mantiqueira</span>
+                <span>R. Joaquim Francisco da Silva - Jacumã, Conde - PB, 58322-000</span>
               </div>
+              {/* --- MODIFICAÇÃO: Telefone Atualizado --- */}
               <div className="flex items-center gap-2">
                 <Phone className="w-4 h-4" />
-                <span>(11) 99999-9999</span>
+                <span>(83) 99687-2334</span>
               </div>
+              {/* --- MODIFICAÇÃO: Email Atualizado --- */}
               <div className="flex items-center gap-2">
                 <Mail className="w-4 h-4" />
-                <span>contato@pousadazekas.com.br</span>
+                <span>faleconosco@pousadazekas.com.br</span>
               </div>
             </div>
           </div>

@@ -72,10 +72,25 @@ export const createQuarto = async (formData: FormData) => {
     headers: { 'Authorization': `Bearer ${token}` },
     body: formData,
   });
+   
+   // --- [INÍCIO DA CORREÇÃO] ---
    if (!response.ok) {
-     const error = await response.json();
-     throw new Error(error.detail || 'Falha ao criar quarto');
+     const errorData = await response.json();
+     
+     // Verifica se é um erro de validação do FastAPI
+     if (errorData.detail && Array.isArray(errorData.detail)) {
+       // Pega a primeira mensagem de erro e mostra
+       const firstError = errorData.detail[0];
+       const field = firstError.loc[1] || 'campo'; // ex: 'descricao'
+       const msg = firstError.msg; // ex: 'field required'
+       throw new Error(`Erro de validação no campo '${field}': ${msg}`);
+     }
+     
+     // Se for outro tipo de erro
+     throw new Error(errorData.detail || 'Falha ao criar quarto');
    }
+   // --- [FIM DA CORREÇÃO] ---
+   
   return response.json();
 };
 

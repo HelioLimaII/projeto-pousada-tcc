@@ -5,7 +5,8 @@ from typing import List, Optional
 
 class Quarto(BaseModel):
     numero: int = Field(...)
-    titulo: str = Field(...)
+    # Em: api-pousada/models/quarto.py
+    titulo: Optional[str] = Field(default=None) # <-- CORREÇÃO AQUI
     descricao: str = Field(...)
     fotos: List[str] = Field(default=[], description="A primeira foto é a principal.")
     status: str = Field(default="disponivel")

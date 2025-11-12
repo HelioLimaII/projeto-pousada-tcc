@@ -1,4 +1,4 @@
-// Em: src/components/QuartoCard.tsx
+// Em: src/components/ui/QuartoCard.tsx
 'use client'
 
 import Link from 'next/link';
@@ -7,8 +7,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Wifi, Car, Coffee, Tv, Users } from 'lucide-react';
 
-// Define a URL base da API para construir o caminho da imagem
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+// A URL base da API NÃO é mais necessária para as imagens
+// const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 interface Quarto {
   id: string;
@@ -17,13 +17,13 @@ interface Quarto {
   descricao: string;
   preco_diaria: number;
   capacidade_hospedes: number;
-  fotos?: string[]; // Torna fotos opcional para segurança
+  fotos?: string[]; 
   comodidades: string[];
   status: string;
 }
 
+// ... (getComodidadeIcon não foi alterado) ...
 const getComodidadeIcon = (comodidade: string) => {
-  // Implemente esta função se precisar dela no cartão
   switch (comodidade?.toLowerCase()) {
     case 'wi-fi': case 'wifi': return <Wifi className="w-4 h-4 mr-1 text-[#6B8E23]" />;
     case 'estacionamento': return <Car className="w-4 h-4 mr-1 text-[#6B8E23]" />;
@@ -33,14 +33,13 @@ const getComodidadeIcon = (comodidade: string) => {
   }
 };
 
-// --- FUNÇÃO PARA ESTILIZAR O STATUS (mantida) ---
+// ... (StatusBadge não foi alterado) ...
 const StatusBadge = ({ status }: { status: string }) => {
   const statusInfo = {
     disponivel: { text: "Disponível", color: "bg-green-500" },
     ocupado: { text: "Ocupado", color: "bg-red-500" },
-    manutencao: { text: "Manutenção", color: "bg-yellow-500 text-black" }, // Ajuste para melhor contraste
+    manutencao: { text: "Manutenção", color: "bg-yellow-500 text-black" }, 
   };
-  // Usa 'outline' como fallback para status desconhecidos
   const info = statusInfo[status?.toLowerCase() as keyof typeof statusInfo] || { text: status || 'Indefinido', color: "bg-gray-400" };
 
   return (
@@ -53,19 +52,18 @@ const StatusBadge = ({ status }: { status: string }) => {
 export default function QuartoCard({ quarto }: { quarto: Quarto }) {
   const isDisponivel = quarto.status?.toLowerCase() === 'disponivel';
 
-  // --- LÓGICA DA IMAGEM ATUALIZADA ---
-  const fotoPath = quarto.fotos && quarto.fotos.length > 0 && quarto.fotos[0];
-  const imageUrl = fotoPath
-                   ? `${API_BASE_URL}${fotoPath}`
-                   : "/placeholder-5t9d5.png";
+  // --- [CORREÇÃO APLICADA] ---
+  // A URL agora vem DIRETAMENTE do banco de dados (Cloudinary)
+  const imageUrl = (quarto.fotos && quarto.fotos.length > 0)
+                   ? quarto.fotos[0] // É a URL completa: "https://res.cloudinary.com/..."
+                   : "/placeholder-5t9d5.png"; // Fallback local
 
   return (
     <Card className="overflow-hidden flex flex-col hover:shadow-xl transition-all duration-300 border border-gray-200 group h-full">
       <div className="relative h-48 sm:h-56 overflow-hidden">
-        {/* === CORREÇÃO: Removido legacyBehavior e a tag <a> interna === */}
         <Link href={`/quartos/${quarto.id}`} className="block w-full h-full">
             <Image
-              src={imageUrl}
+              src={imageUrl} // Agora usa a URL correta do Cloudinary
               alt={`Foto principal do quarto ${quarto.titulo}`}
               fill
               className="object-cover group-hover:scale-105 transition-transform duration-300"
@@ -74,7 +72,6 @@ export default function QuartoCard({ quarto }: { quarto: Quarto }) {
               priority={false}
             />
         </Link>
-        {/* Etiqueta de Status */}
         <div className="absolute top-3 left-3 z-10">
           <StatusBadge status={quarto.status} />
         </div>
@@ -96,8 +93,6 @@ export default function QuartoCard({ quarto }: { quarto: Quarto }) {
         </div>
 
         <div className="mt-auto pt-3 border-t border-gray-200/60">
-           {/* === CORREÇÃO: Removido legacyBehavior e a tag <a> interna === */}
-           {/* O botão agora está dentro do Link, que renderizará o <a> */}
           <Link href={`/quartos/${quarto.id}`}>
              <Button
               className="w-full bg-[#6B8E23] hover:bg-[#5a7a1f] text-white transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
@@ -112,4 +107,3 @@ export default function QuartoCard({ quarto }: { quarto: Quarto }) {
     </Card>
   );
 }
-

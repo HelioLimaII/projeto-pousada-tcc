@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 // Interface para os dados do formulário
 interface QuartoFormData {
   numero: number;
-  titulo: string;
+  //titulo: string;
   descricao: string;
   preco_diaria: number;
   capacidade_hospedes: number;
@@ -26,11 +26,9 @@ interface QuartoFormProps {
 }
 
 export default function QuartoForm({ initialData = {}, onSubmit, isLoading }: QuartoFormProps) {
-  // A inicialização do estado acontece aqui e é executada apenas uma vez.
-  // Isso é suficiente e mais eficiente do que usar um useEffect para a mesma tarefa.
   const [formData, setFormData] = useState<QuartoFormData>({
     numero: initialData.numero || 0,
-    titulo: initialData.titulo || '',
+    //titulo: initialData.titulo || '',
     descricao: initialData.descricao || '',
     preco_diaria: initialData.preco_diaria || 0,
     capacidade_hospedes: initialData.capacidade_hospedes || 1,
@@ -38,8 +36,6 @@ export default function QuartoForm({ initialData = {}, onSubmit, isLoading }: Qu
     comodidades: initialData.comodidades || [],
   });
   const [fotos, setFotos] = useState<FileList | null>(null);
-
-  // O useEffect problemático foi REMOVIDO daqui.
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -60,17 +56,23 @@ export default function QuartoForm({ initialData = {}, onSubmit, isLoading }: Qu
     e.preventDefault();
     const data = new FormData();
 
+    // Adiciona os campos de texto e números ao FormData
     Object.entries(formData).forEach(([key, value]) => {
       if (key === 'comodidades' && Array.isArray(value)) {
+        // Trata o array de comodidades
         value.forEach(item => data.append(key, item));
       } else {
+        // Trata os outros campos
         data.append(key, String(value));
       }
     });
 
+    // Adiciona os arquivos de imagem
     if (fotos) {
       for (let i = 0; i < fotos.length; i++) {
-        data.append('novas_fotos', fotos[i]);
+        // [MODIFICAÇÃO AQUI]
+        // Alterado de 'novas_fotos' para 'images' para alinhar com o plano do backend
+        data.append('images', fotos[i]);
       }
     }
     onSubmit(data);
@@ -79,7 +81,7 @@ export default function QuartoForm({ initialData = {}, onSubmit, isLoading }: Qu
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{initialData.titulo ? 'Editar Quarto' : 'Criar Novo Quarto'}</CardTitle>
+        <CardTitle>{initialData.numero ? 'Editar Quarto' : 'Criar Novo Quarto'}</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -87,12 +89,6 @@ export default function QuartoForm({ initialData = {}, onSubmit, isLoading }: Qu
           <div className="space-y-2">
             <Label htmlFor="numero">Número do Quarto</Label>
             <Input id="numero" name="numero" type="number" value={formData.numero} onChange={handleChange} required />
-          </div>
-          
-          {/* Título */}
-          <div className="space-y-2">
-            <Label htmlFor="titulo">Título</Label>
-            <Input id="titulo" name="titulo" type="text" value={formData.titulo} onChange={handleChange} required />
           </div>
 
           {/* Descrição */}
@@ -132,7 +128,7 @@ export default function QuartoForm({ initialData = {}, onSubmit, isLoading }: Qu
           {/* Upload de Fotos */}
           <div className="space-y-2">
             <Label htmlFor="fotos">Adicionar Novas Fotos</Label>
-            <Input id="fotos" type="file" multiple onChange={handleFileChange} />
+            <Input id="fotos" name="images" type="file" multiple onChange={handleFileChange} />
           </div>
 
           <Button type="submit" disabled={isLoading} className="w-full">
@@ -143,4 +139,3 @@ export default function QuartoForm({ initialData = {}, onSubmit, isLoading }: Qu
     </Card>
   );
 }
-

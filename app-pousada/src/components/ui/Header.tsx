@@ -30,7 +30,7 @@ export default function Header() {
               <div className="relative h-10 w-10"> {/* Container para a imagem */}
                 <Image
                   // **** ALTERAÇÃO AQUI ****
-                  src="https://res.cloudinary.com/dd2qpbedy/image/upload/v1761336530/Captura_de_Tela_2025-10-24_a%CC%80s_17.08.12_x0az5n.png" // <-- SUBSTITUA PELA SUA URL CLOUDINARY
+                  src="https://res.cloudinary.com/dd2qpbedy/image/upload/v1762082168/WhatsApp_Image_2025-11-01_at_08.55.59_gcqhxg.jpg" // <-- SUBSTITUA PELA SUA URL CLOUDINARY
                   // Exemplo: src="https://res.cloudinary.com/seu-nome/image/upload/v123/logo-zekas.png"
 
                   alt="Logótipo Pousada Zekas"

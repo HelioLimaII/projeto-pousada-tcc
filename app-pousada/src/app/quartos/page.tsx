@@ -1,9 +1,10 @@
 // Em: src/app/quartos/page.tsx
-'use client'; // Necessário para useEffect e useState
+// SEM 'use client' no topo
 
-import { useState, useEffect } from 'react';
 import QuartoCard from "@/components/ui/QuartoCard"; // Importa o seu componente de cartão
 import { getQuartos } from '@/lib/api'; // Importa a função da API
+import { Alert, AlertDescription } from '@/components/ui/alert'; // Para feedback de erro
+import { AlertCircle } from 'lucide-react';
 
 // Interface para os dados do quarto (pode ser partilhada)
 interface Quarto {
@@ -13,33 +14,23 @@ interface Quarto {
   descricao: string;
   preco_diaria: number;
   capacidade_hospedes: number;
-  fotos?: string[]; // Inclui o campo fotos
+  fotos?: string[];
   comodidades: string[];
   status: string;
 }
 
-export default function QuartosPage() {
-  const [todosQuartos, setTodosQuartos] = useState<Quarto[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+// A função da página agora é 'async'
+export default async function QuartosPage() {
+  let todosQuartos: Quarto[] = [];
+  let error: string | null = null;
 
-  useEffect(() => {
-    const fetchTodosQuartos = async () => {
-      setLoading(true);
-      setError('');
-      try {
-        const data = await getQuartos(); // Busca todos os quartos
-        setTodosQuartos(data);
-      } catch (err) {
-        setError('Falha ao carregar a lista de quartos.');
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchTodosQuartos();
-  }, []); // Executa apenas uma vez
+  // Busca os dados diretamente no servidor
+  try {
+    todosQuartos = await getQuartos(); // Busca todos os quartos
+  } catch (err) {
+    console.error(err);
+    error = 'Falha ao carregar a lista de quartos.';
+  }
 
   return (
     <div className="min-h-screen bg-[#F5F5DC] py-12 px-4 sm:px-6 lg:px-8">
@@ -54,18 +45,24 @@ export default function QuartosPage() {
         </div>
 
         {/* Grelha de Todos os Quartos */}
-        {loading && <p className="text-center">A carregar quartos...</p>}
-        {error && <p className="text-center text-red-500">{error}</p>}
-        {!loading && !error && todosQuartos.length > 0 && (
+        {error && (
+            <Alert variant="destructive" className="max-w-lg mx-auto">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+            </Alert>
+        )}
+        
+        {!error && todosQuartos.length > 0 && (
           <div className="grid grid-cols-1 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 xl:gap-x-8">
             {todosQuartos.map((quarto) => (
-              // Usa o QuartoCard para renderizar cada quarto
+              // O QuartoCard (corrigido na Fase 2) renderiza a imagem do Cloudinary
               <QuartoCard key={quarto.id} quarto={quarto} />
             ))}
           </div>
         )}
-         {!loading && todosQuartos.length === 0 && !error && (
-             <p className="text-center text-gray-500">Nenhum quarto encontrado.</p>
+        
+         {!error && todosQuartos.length === 0 && (
+             <p className="text-center text-gray-500">Nenhum quarto encontrado no momento.</p>
          )}
       </div>
     </div>

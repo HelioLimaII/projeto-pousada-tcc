@@ -168,7 +168,7 @@ export default function BookingMap() {
   };
 
 
-  // --- JSX do Componente (sem alterações) ---
+  // --- JSX do Componente (Alteração aqui) ---
   return (
     <>
       <div className="bg-white p-4 sm:p-6 rounded-lg shadow-md">
@@ -190,8 +190,8 @@ export default function BookingMap() {
               gridTemplateColumns: `minmax(120px, 1.5fr) repeat(${daysInMonth}, minmax(45px, 1fr))`
             }}
           >
-            {/* Header da Grelha */}
-            <div className="bg-gray-100 font-semibold p-2 sticky left-0 z-30 text-sm text-gray-600 border-r border-b border-gray-200">Quarto</div>
+            {/* Header da Grelha --- MODIFICAÇÃO AQUI --- */}
+            <div className="bg-gray-100 font-semibold p-2 sticky left-0 z-30 text-sm text-gray-600 border-r border-b border-gray-200">Dias</div>
             {Array.from({ length: daysInMonth }, (_, i) => {
               const day = i + 1;
               const { isWeekend, isToday } = getDayInfo(day);
@@ -212,10 +212,12 @@ export default function BookingMap() {
             ) : (
               data.map(quarto => (
                 <div key={quarto.id} className="contents">
+                    {/* Esta é a célula que descreve a *linha* (ainda é um quarto) */}
                     <div className="font-semibold p-2 border-r border-b border-gray-200 sticky left-0 bg-white z-20 text-sm flex flex-col justify-center">
                       <p className="truncate font-bold text-gray-700">{quarto.titulo}</p>
                       <p className="text-xs text-gray-500">Nº {quarto.numero}</p>
                     </div>
+                    {/* Este é o contentor para os dias e reservas dessa linha */}
                     <div
                       className="col-start-2 col-span-full relative grid border-b border-gray-200"
                       style={{ gridTemplateColumns: `repeat(${daysInMonth}, minmax(45px, 1fr))`}}
@@ -255,4 +257,3 @@ export default function BookingMap() {
     </>
   );
 }
-

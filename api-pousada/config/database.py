@@ -4,11 +4,28 @@ from pymongo import MongoClient
 from dotenv import load_dotenv
 import os
 import sys
+import cloudinary
+
+# --- [CORREÇÃO APLICADA] ---
+# O load_dotenv() DEVE ser chamado ANTES de qualquer os.getenv()
+# para garantir que as variáveis do .env sejam carregadas.
+if os.getenv("RENDER") is None: # O Render define esta variável por defeito
+    load_dotenv()
+# --- [FIM DA CORREÇÃO] ---
+
+
+# Agora que o .env foi lido, esta configuração vai funcionar
+cloudinary.config(
+    cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
+    api_key=os.getenv("CLOUDINARY_API_KEY"),
+    api_secret=os.getenv("CLOUDINARY_API_SECRET"),
+)
 
 # Carrega as variáveis de ambiente do arquivo .env (apenas para desenvolvimento local)
 # Em produção (Render), as variáveis já estarão no ambiente.
-if os.getenv("RENDER") is None: # O Render define esta variável por defeito
-    load_dotenv()
+# (Esta secção foi movida para o topo)
+# if os.getenv("RENDER") is None: 
+#     load_dotenv()
 
 # [CORRIGIDO] Alterado de "MONGO_URL" para "DATABASE_URL"
 # Este é o nome da variável que definimos no dashboard do Render.
@@ -29,9 +46,8 @@ except Exception as e:
     print(f"❌ Erro ao conectar ao MongoDB. Verifique sua 'DATABASE_URL'. Erro: {e}", file=sys.stderr)
     raise
 
-# Seleciona o banco de dados "pousada_db"
-# (O seu código original usava "pousada_db", vamos manter)
-db = client.pousada_zekas
+# Seleciona o banco de dados (lido da DATABASE_URL)
+db = client.get_database()
 
 # Cria referências para as coleções que vamos usar
 collection_quartos = db.quartos

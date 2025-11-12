@@ -12,7 +12,7 @@ import { MapPin, Phone, Mail, Clock, MessageCircle, Send } from 'lucide-react'
 import Link from 'next/link'
 
 export default function ContatoPage() {
-  // 1. Adicionados novos campos ao estado inicial do formulário
+  // 1. Estado do formulário (MODIFICADO)
   const [formData, setFormData] = useState({
     nome: '',
     email: '',
@@ -28,7 +28,9 @@ export default function ContatoPage() {
     placaVeiculo: '',
     checkin: '',
     checkout: '',
-    hospedes: '2',
+    // hospedes: '2', // Removido
+    adultos: '2', // Adicionado
+    criancas: '0', // Adicionado
     mensagem: ''
   })
 
@@ -41,7 +43,7 @@ export default function ContatoPage() {
     })
   }
 
-  // 2. Atualizado o corpo da mensagem para WhatsApp e Email para incluir os novos campos
+  // 2. Handler para o WhatsApp (MODIFICADO)
   const handleWhatsAppSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
@@ -75,9 +77,15 @@ export default function ContatoPage() {
 
     if (formData.checkin && formData.checkout) {
       message += `\n\n*Interesse em Reserva:*`
-      message += `\n- Check-in: ${new Date(formData.checkin).toLocaleDateString('pt-BR')}`
-      message += `\n- Check-out: ${new Date(formData.checkout).toLocaleDateString('pt-BR')}`
-      message += `\n- Número de hóspedes: ${formData.hospedes}`
+       // Formata a data para dd/mm/aaaa (considerando fuso horário local)
+       const checkinDate = new Date(formData.checkin + 'T00:00:00') // Adiciona T00:00:00 para evitar problemas de fuso
+       const checkoutDate = new Date(formData.checkout + 'T00:00:00')
+       
+       message += `\n- Check-in: ${checkinDate.toLocaleDateString('pt-BR')}`
+       message += `\n- Check-out: ${checkoutDate.toLocaleDateString('pt-BR')}`
+      // MODIFICAÇÃO: Atualizado para enviar adultos e crianças
+      message += `\n- Adultos: ${formData.adultos}`
+      message += `\n- Crianças: ${formData.criancas}`
     }
 
     if (formData.mensagem) {
@@ -86,7 +94,7 @@ export default function ContatoPage() {
 
     message += `\n\nAguardo retorno!`
 
-    const numeroWhatsApp = "5583996872334"; // Substitua pelo número real
+    const numeroWhatsApp = "5583996872334"; // Número de WhatsApp da Pousada Zekas (PB)
     const whatsappUrl = `https://wa.me/${numeroWhatsApp}?text=${encodeURIComponent(message)}`
     window.open(whatsappUrl, '_blank')
     
@@ -95,50 +103,7 @@ export default function ContatoPage() {
     }, 1000)
   }
 
-  const handleEmailSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    if (!formData.nome || !formData.email) {
-      alert('Por favor, preencha pelo menos seu nome e email.')
-      return
-    }
-    
-    const subject = 'Solicitação de Reserva/Contato - Pousada Zekas'
-    
-    let body = `Dados Pessoais:%0D%0A`
-    body += `Nome: ${formData.nome}%0D%0A`
-    body += `Email: ${formData.email}%0D%0A`
-    body += `Telefone: ${formData.telefone || 'Não informado'}%0D%0A`
-    body += `RG/Passaporte: ${formData.rg || 'Não informado'}%0D%0A`
-    body += `CPF: ${formData.cpf || 'Não informado'}%0D%0A`
-    body += `Profissão: ${formData.profissao || 'Não informado'}%0D%0A%0D%0A`
-
-    body += `Endereço:%0D%0A`
-    body += `Logradouro: ${formData.endereco || 'Não informado'}%0D%0A`
-    body += `Bairro: ${formData.bairro || 'Não informado'}%0D%0A`
-    body += `Cidade: ${formData.cidade || 'Não informado'}%0D%0A`
-    body += `Estado: ${formData.estado || 'Não informado'}%0D%0A`
-    body += `CEP: ${formData.cep || 'Não informado'}%0D%0A%0D%0A`
-    
-    if(formData.placaVeiculo) {
-      body += `Placa do Veículo: ${formData.placaVeiculo}%0D%0A%0D%0A`
-    }
-    
-    if (formData.checkin && formData.checkout) {
-      body += `Interesse em Reserva:%0D%0A`
-      body += `Check-in: ${new Date(formData.checkin).toLocaleDateString('pt-BR')}%0D%0A`
-      body += `Check-out: ${new Date(formData.checkout).toLocaleDateString('pt-BR')}%0D%0A`
-      body += `Hóspedes: ${formData.hospedes}%0D%0A%0D%0A`
-    }
-    
-    if (formData.mensagem) {
-      body += `Mensagem Adicional:%0D%0A${formData.mensagem}`
-    }
-    
-    const emailPousada = "contato@pousadazekas.com.br"; // Substitua pelo email real
-    const mailtoUrl = `mailto:${emailPousada}?subject=${subject}&body=${body}`
-    window.location.href = mailtoUrl
-  }
+  // A função handleEmailSubmit foi removida pois o botão não existe mais.
 
   return (
     <div>
@@ -166,7 +131,7 @@ export default function ContatoPage() {
                   Solicitar Informações ou Reserva
                 </h3>
                 
-                {/* 3. Formulário atualizado com os novos campos */}
+                {/* 3. Formulário (MODIFICADO) */}
                 <form onSubmit={handleWhatsAppSubmit} className="space-y-4">
                   {/* --- Dados Pessoais --- */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -180,7 +145,7 @@ export default function ContatoPage() {
                     </div>
                     <div>
                       <Label htmlFor="telefone">Telefone/WhatsApp *</Label>
-                      <Input id="telefone" name="telefone" type="tel" value={formData.telefone} onChange={handleInputChange} placeholder="(11) 99999-9999" required />
+                      <Input id="telefone" name="telefone" type="tel" value={formData.telefone} onChange={handleInputChange} placeholder="(83) 99999-9999" required />
                     </div>
                      <div>
                       <Label htmlFor="profissao">Profissão</Label>
@@ -225,12 +190,13 @@ export default function ContatoPage() {
                     </div>
                   </div>
 
-                  {/* --- Estadia --- */}
+                  {/* --- Estadia (MODIFICADO) --- */}
                   <div className="border-t border-[#6B8E23]/20 pt-4">
                     <h4 className="text-lg font-medium text-[#2F4F4F] mb-4">
                       Informações da Estadia (Opcional)
                     </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* MODIFICAÇÃO: Grid alterado para md:grid-cols-2 */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <Label htmlFor="checkin">Check-in</Label>
                         <Input id="checkin" name="checkin" type="date" value={formData.checkin} onChange={handleInputChange} />
@@ -239,17 +205,31 @@ export default function ContatoPage() {
                         <Label htmlFor="checkout">Check-out</Label>
                         <Input id="checkout" name="checkout" type="date" value={formData.checkout} onChange={handleInputChange} />
                       </div>
+
+                      {/* MODIFICAÇÃO: Campo "Hóspedes" substituído por "Adultos" e "Crianças" */}
                       <div>
-                        <Label htmlFor="hospedes">Hóspedes</Label>
-                        <select id="hospedes" name="hospedes" value={formData.hospedes} onChange={handleInputChange} className="w-full px-3 py-2 border border-[#6B8E23]/30 rounded-md focus:outline-none focus:ring-2 focus:ring-[#008080] focus:border-[#008080]">
-                          <option value="1">1 pessoa</option>
-                          <option value="2">2 pessoas</option>
-                          <option value="3">3 pessoas</option>
-                          <option value="4">4 pessoas</option>
-                          <option value="5">5+ pessoas</option>
+                        <Label htmlFor="adultos">Adultos</Label>
+                        <select id="adultos" name="adultos" value={formData.adultos} onChange={handleInputChange} className="w-full px-3 py-2 border border-[#6B8E23]/30 rounded-md focus:outline-none focus:ring-2 focus:ring-[#008080] focus:border-[#008080]">
+                          <option value="1">1 Adulto</option>
+                          <option value="2">2 Adultos</option>
+                          <option value="3">3 Adultos</option>
+                          <option value="4">4 Adultos</option>
+                          <option value="5">5+ Adultos</option>
                         </select>
                       </div>
-                      <div className="md:col-span-3">
+                      <div>
+                        <Label htmlFor="criancas">Crianças</Label>
+                        <select id="criancas" name="criancas" value={formData.criancas} onChange={handleInputChange} className="w-full px-3 py-2 border border-[#6B8E23]/30 rounded-md focus:outline-none focus:ring-2 focus:ring-[#008080] focus:border-[#008080]">
+                          <option value="0">0 Crianças</option>
+                          <option value="1">1 Criança</option>
+                          <option value="2">2 Crianças</option>
+                          <option value="3">3 Crianças</option>
+                          <option value="4">4+ Crianças</option>
+                        </select>
+                      </div>
+                      
+                      {/* MODIFICAÇÃO: Col-span ajustado para md:col-span-2 */}
+                      <div className="md:col-span-2">
                         <Label htmlFor="placaVeiculo">Placa do Veículo</Label>
                         <Input id="placaVeiculo" name="placaVeiculo" value={formData.placaVeiculo} onChange={handleInputChange} placeholder="ABC-1234" />
                       </div>
@@ -261,21 +241,18 @@ export default function ContatoPage() {
                     <Textarea id="mensagem" name="mensagem" value={formData.mensagem} onChange={handleInputChange} placeholder="Alguma observação ou pedido especial?" rows={4} />
                   </div>
 
+                  {/* --- Botão de Envio --- */}
                   <div className="flex flex-col sm:flex-row gap-3 pt-4">
-                    <Button type="submit" disabled={isSubmitting} className="flex-1 bg-[#25D366] hover:bg-[#20BA5A] text-white flex items-center justify-center gap-2">
+                    <Button type="submit" disabled={isSubmitting} className="w-full bg-[#25D366] hover:bg-[#20BA5A] text-white flex items-center justify-center gap-2">
                       <MessageCircle className="w-4 h-4" />
                       {isSubmitting ? 'Enviando...' : 'Enviar via WhatsApp'}
-                    </Button>
-                    <Button type="button" onClick={handleEmailSubmit} variant="outline" className="flex-1 border-[#008080] text-[#008080] hover:bg-[#008080] hover:text-white flex items-center justify-center gap-2">
-                      <Send className="w-4 h-4" />
-                      Enviar por Email
                     </Button>
                   </div>
                 </form>
               </CardContent>
             </Card>
             
-            {/* Informações de Contato Direto (sem alterações) */}
+            {/* --- Contato Direto (Sem alterações nesta seção) --- */}
             <Card className="border-[#6B8E23]/20">
               <CardContent className="p-6">
                 <h3 className="text-xl font-semibold text-[#2F4F4F] mb-4">
@@ -287,7 +264,7 @@ export default function ContatoPage() {
                       <Phone className="w-5 h-5 text-[#008080]" />
                     </div>
                     <div>
-                      <p className="font-medium text-[#2F4F4F]">(11) 99999-9999</p>
+                      <p className="font-medium text-[#2F4F4F]">(83) 99687-2334</p>
                       <p className="text-sm text-[#2F4F4F]/70">Clique para ligar</p>
                     </div>
                   </a>
@@ -300,12 +277,12 @@ export default function ContatoPage() {
                       <p className="text-sm text-[#2F4F4F]/70">Conversar agora</p>
                     </div>
                   </a>
-                  <a href="mailto:contato@pousadazekas.com.br" className="flex items-center gap-3 p-3 rounded-lg hover:bg-[#6B8E23]/5 transition-colors group">
+                  <a href="mailto:faleconosco@pousadazekas.com.br" className="flex items-center gap-3 p-3 rounded-lg hover:bg-[#6B8E23]/5 transition-colors group">
                     <div className="w-10 h-10 bg-[#6B8E23]/10 rounded-full flex items-center justify-center group-hover:bg-[#6B8E23]/20 transition-colors">
                       <Mail className="w-5 h-5 text-[#6B8E23]" />
                     </div>
                     <div>
-                      <p className="font-medium text-[#2F4F4F]">contato@pousadazekas.com.br</p>
+                      <p className="font-medium text-[#2F4F4F]">faleconosco@pousadazekas.com.br</p>
                       <p className="text-sm text-[#2F4F4F]/70">Enviar email</p>
                     </div>
                   </a>
@@ -314,7 +291,7 @@ export default function ContatoPage() {
             </Card>
           </div>
 
-          {/* Coluna da Direita (sem alterações) */}
+          {/* Coluna da Direita (Localização e Como Chegar - Sem alterações) */}
           <div className="space-y-8">
             <Card className="border-[#6B8E23]/20">
               <CardContent className="p-6">
@@ -326,10 +303,18 @@ export default function ContatoPage() {
                   <div>
                     <p className="font-medium text-[#2F4F4F]">Endereço:</p>
                     <p className="text-[#2F4F4F]/80">
-                      Rua da Natureza, 123<br />
-                      Serra da Mantiqueira<br />
-                      CEP: 12345-678
+                      R. Joaquim Francisco da Silva - Jacumã<br />
+                      Conde - PB<br />
+                      CEP: 58322-000
                     </p>
+                    <a 
+                      href="https://maps.app.goo.gl/9Afe7ZP67GAKxxq68" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-sm text-[#008080] hover:underline mt-1 inline-block"
+                    >
+                      Ver no Google Maps
+                    </a>
                   </div>
                   
                   <div className="flex items-center gap-2 text-[#2F4F4F]">
@@ -349,7 +334,7 @@ export default function ContatoPage() {
               <CardContent className="p-0">
                 <div className="relative h-80 rounded-lg overflow-hidden">
                   <iframe
-                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3656.448598130907!2d-46.63472368502207!3d-23.588249368469487!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x94ce5a2b2ed7f3a1%3A0xab35da2f5ca62674!2sSão%20Paulo%2C%20SP!5e0!3m2!1spt!2sbr!4v1635959492000!5m2!1spt!2sbr"
+                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3957.518621422055!2d-34.84366632599026!3d-7.295751971701046!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x7ab13c7c251d13b%3A0x1c37b3b06383637e!2sPousada%20Zekas!5e0!3m2!1spt-BR!2sbr!4v1730600000000!5m2!1spt-BR!2sbr"
                     width="100%"
                     height="100%"
                     style={{ border: 0 }}
@@ -361,7 +346,7 @@ export default function ContatoPage() {
                 </div>
                 <div className="p-4 bg-[#6B8E23]/5">
                   <p className="text-sm text-[#2F4F4F]/80 text-center">
-                    📍 Localizada em meio à natureza exuberante da Serra da Mantiqueira
+                    📍 R. Joaquim Francisco da Silva - Jacumã, Conde - PB
                   </p>
                 </div>
               </CardContent>
@@ -376,21 +361,19 @@ export default function ContatoPage() {
                   <div>
                     <p className="font-medium text-[#2F4F4F]">🚗 De Carro:</p>
                     <p className="text-sm">
-                      Saída pela Rodovia Fernão Dias, seguir placas para Serra da Mantiqueira. 
-                      Aproximadamente 2h de São Paulo.
+                      Acesso fácil pela PB-008, a poucos minutos de João Pessoa.
                     </p>
                   </div>
                   <div>
                     <p className="font-medium text-[#2F4F4F]">🚌 Transporte Público:</p>
                     <p className="text-sm">
-                      Ônibus até a cidade mais próxima, depois transfer (consulte disponibilidade).
+                      Linhas de ônibus intermunicipais partem de João Pessoa (Terminal de Integração) para Conde/Jacumã.
                     </p>
                   </div>
                   <div>
                     <p className="font-medium text-[#2F4F4F]">✈️ Aeroporto:</p>
                     <p className="text-sm">
-                      Aeroporto de Guarulhos: 2h30 de carro<br />
-                      Aeroporto de Congonhas: 2h15 de carro
+                      Aeroporto Internacional de João Pessoa (JPA) - Bayeux: Aproximadamente 40 minutos de carro.
                     </p>
                   </div>
                 </div>
@@ -426,4 +409,4 @@ export default function ContatoPage() {
       </section>
     </div>
   )
-}
+} 
