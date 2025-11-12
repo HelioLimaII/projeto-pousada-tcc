@@ -38,7 +38,7 @@ app.add_middleware(
 
 # Servir ficheiros estáticos (nao comentar enquanto uso no localhost, ao subir
 # para o render manter 
-app.mount("/static", StaticFiles(directory="static"), name="static")
+# app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Incluir as rotas
 app.include_router(auth_router, tags=["Autenticação"])
