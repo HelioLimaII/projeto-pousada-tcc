@@ -1,20 +1,13 @@
 // Em: src/app/quartos/[id]/page.tsx
-// (Este continua a ser um Componente de Servidor)
 
 import { getQuartoById } from '@/lib/api'; 
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle, Users, Wifi, Car, Coffee, Tv } from 'lucide-react'; 
 import Link from 'next/link';
-
-// --- [CORREÇÃO] ---
-// Removemos os imports do 'Image' e 'Carousel' daqui...
-// ...e importamos o nosso novo Componente de Cliente.
 import QuartoImageCarousel from '@/components/ui/QuartoImageCarousel';
-// ------------------
 
-// (A interface Quarto, QuartosDetalhesProps, e getComodidadeIcon 
-// permanecem exatamente iguais)
+// Interface para os dados do quarto
 interface Quarto {
   id: string;
   numero: number;
@@ -25,15 +18,15 @@ interface Quarto {
   fotos?: string[];
   comodidades: string[];
   status: string;
+}
 
+// [CORREÇÃO] Definição correta para Next.js 15
+// params agora é uma Promise
+interface Props {
+  params: Promise<{ id: string }>;
 }
-/*
-interface QuartosDetalhesProps {
-  params: {
-    id: string;
-  };
-}
-  */
+
+// Função auxiliar para ícones
 const getComodidadeIcon = (comodidade: string) => {
   const com = comodidade.trim().toLowerCase();
   if (com === 'wi-fi' || com === 'wifi') { return <Wifi className="w-5 h-5 mr-2 text-[#6B8E23]" />; }
@@ -43,10 +36,10 @@ const getComodidadeIcon = (comodidade: string) => {
   return null; 
 };
 
-
-export default async function QuartosDetalhesPage({ params }: { params: { id: string } }) {
-  // (Toda a lógica de 'fetch' e 'error' permanece igual)
-  const { id } = params;
+export default async function QuartosDetalhesPage({ params }: Props) {
+  // [CORREÇÃO] Aguardamos a resolução da promessa params antes de usar o ID
+  const { id } = await params;
+  
   let quarto: Quarto | null = null;
   let error: string | null = null;
 
@@ -72,7 +65,6 @@ export default async function QuartosDetalhesPage({ params }: { params: { id: st
   }
 
   const isDisponivel = quarto.status?.toLowerCase() === 'disponivel';
-  // [CORREÇÃO] Apenas preparamos os dados para o componente de cliente
   const fotos = quarto.fotos || [];
 
   return (
@@ -82,14 +74,10 @@ export default async function QuartosDetalhesPage({ params }: { params: { id: st
 
           {/* Coluna da Esquerda: Carrossel de Imagens */}
           <div className="p-4 sm:p-6">
-            {/* [CORREÇÃO] Usamos o nosso novo componente de cliente
-              e passamos os dados (que são "seguros") como props.
-            */}
             <QuartoImageCarousel fotos={fotos} titulo={quarto.titulo} />
           </div>
 
           {/* Coluna da Direita: Informações e Reserva */}
-          {/* (Esta secção permanece 100% igual) */}
           <div className="p-6 md:p-8 flex flex-col">
             <h1 className="text-3xl font-bold text-[#2F4F4F] mb-2">{quarto.titulo}</h1>
             <p className="text-lg text-[#2F4F4F]/80 mb-6">{quarto.descricao}</p>
