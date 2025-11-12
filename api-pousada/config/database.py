@@ -6,47 +6,48 @@ import os
 import sys
 import cloudinary
 
-# --- [CORREÇÃO APLICADA] ---
-# O load_dotenv() DEVE ser chamado ANTES de qualquer os.getenv()
-# para garantir que as variáveis do .env sejam carregadas.
+# --- [1. CARREGAMENTO DE VARIÁVEIS] ---
+# O load_dotenv() deve ser a primeira coisa a rodar
 if os.getenv("RENDER") is None: # O Render define esta variável por defeito
     load_dotenv()
-# --- [FIM DA CORREÇÃO] ---
 
-
-# Agora que o .env foi lido, esta configuração vai funcionar
+# --- [2. CONFIGURAÇÃO CLOUDINARY] ---
 cloudinary.config(
     cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
     api_key=os.getenv("CLOUDINARY_API_KEY"),
     api_secret=os.getenv("CLOUDINARY_API_SECRET"),
 )
 
-# Carrega as variáveis de ambiente do arquivo .env (apenas para desenvolvimento local)
-# Em produção (Render), as variáveis já estarão no ambiente.
-# (Esta secção foi movida para o topo)
-# if os.getenv("RENDER") is None: 
-#     load_dotenv()
-
-# [CORRIGIDO] Alterado de "MONGO_URL" para "DATABASE_URL"
-# Este é o nome da variável que definimos no dashboard do Render.
+# --- [3. CONFIGURAÇÃO MONGODB] ---
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 # Validação Crítica
 if not DATABASE_URL:
     print("❌ Erro Crítico: A variável de ambiente 'DATABASE_URL' não foi encontrada.", file=sys.stderr)
-    # Isto fará o deploy falhar imediatamente se a variável estiver em falta.
     raise ValueError("A variável de ambiente 'DATABASE_URL' não foi definida.")
+
+# --- [NOVA PROTEÇÃO] ---
+# Limpeza da string de conexão para evitar erros no Render
+# Remove espaços em branco no início e no fim
+DATABASE_URL = DATABASE_URL.strip()
+# Remove aspas simples ou duplas que possam ter vindo da configuração por engano
+DATABASE_URL = DATABASE_URL.strip("'").strip('"')
+
+# Log de debug (mostra apenas o início da URL para não vazar a senha)
+print(f"ℹ️ Tentando conectar ao MongoDB. Início da URL processada: {DATABASE_URL[:15]}...")
+# -----------------------
 
 # Cria o cliente de conexão
 try:
     client = MongoClient(DATABASE_URL)
-    # Testa a conexão para garantir que a URL é válida
+    # Testa a conexão para garantir que a URL é válida e a senha está correta
     client.server_info() 
 except Exception as e:
     print(f"❌ Erro ao conectar ao MongoDB. Verifique sua 'DATABASE_URL'. Erro: {e}", file=sys.stderr)
     raise
 
-# Seleciona o banco de dados (lido da DATABASE_URL)
+# Seleciona o banco de dados
+# O pymongo seleciona automaticamente o banco definido na string de conexão (pousada_zekas)
 db = client.get_database()
 
 # Cria referências para as coleções que vamos usar
