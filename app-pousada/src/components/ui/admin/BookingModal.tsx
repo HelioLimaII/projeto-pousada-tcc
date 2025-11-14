@@ -12,18 +12,18 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"; // Importa o Select do shadcn/ui
+} from "@/components/ui/select";
 import {
     createReserva,
     updateReserva,
     deleteReserva,
     getReservaById,
-    getClientes, // Função para buscar clientes
-    getQuartos    // Função para buscar quartos
+    getClientes,
+    getQuartos
 } from '@/lib/api';
-import { X, AlertCircle } from 'lucide-react'; // Importa AlertCircle
+import { X, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import Link from 'next/link'; // Importa o Link
+import Link from 'next/link';
 
 // --- Interfaces ---
 interface ModalProps {
@@ -31,114 +31,168 @@ interface ModalProps {
   onClose: () => void;
   onSave: () => void;
   reservaId?: string | null;
-  quartoId?: string | null; // ID do quarto pré-selecionado ao clicar no mapa
+  quartoId?: string | null;
   initialDate?: string;
 }
 
-interface Cliente { // Interface para dados do cliente
+interface Cliente {
   id: string;
   nome: string;
 }
 
-interface Quarto { // Interface para dados do quarto
+interface Quarto {
     id: string;
     numero: number;
     titulo: string;
-    status: string; // Para mostrar se está disponível, ocupado, etc.
+    status: string;
+    preco_diaria: number; // [NOVO] Necessário para o cálculo inicial
 }
 
+// Função auxiliar para calcular a diferença de dias
+const calcularDias = (inicio: string, fim: string) => {
+  if (!inicio || !fim) return 0;
+  const start = new Date(inicio);
+  const end = new Date(fim);
+  // Diferença em milissegundos dividida por ms em um dia
+  const diff = end.getTime() - start.getTime();
+  const days = Math.ceil(diff / (1000 * 3600 * 24));
+  return days > 0 ? days : 0;
+};
 
 export default function BookingModal({ isOpen, onClose, onSave, reservaId, quartoId, initialDate }: ModalProps) {
   // --- Estados do Formulário ---
   const [formData, setFormData] = useState({
-    id_cliente: '', // Campo para o ID do cliente selecionado
-    id_quarto: '',  // Campo para o ID do quarto selecionado
+    id_cliente: '',
+    id_quarto: '',
     data_checkin: '',
     data_checkout: '',
     status: 'Pendente',
-    valor_total: 0,
+    valor_total: 0, // Este valor agora é calculado, não digitado diretamente
     observacoes: '',
   });
-  const [clientes, setClientes] = useState<Cliente[]>([]); // Lista de clientes para o select
-  const [quartos, setQuartos] = useState<Quarto[]>([]);   // Lista de quartos para o select
+
+  // [NOVO] Estado para controlar o valor unitário da diária
+  const [valorDiaria, setValorDiaria] = useState<number>(0);
+  const [diasEstadia, setDiasEstadia] = useState<number>(0);
+
+  const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [quartos, setQuartos] = useState<Quarto[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [isLoadingLists, setIsLoadingLists] = useState(false); // Loading para as listas
+  const [isLoadingLists, setIsLoadingLists] = useState(false);
   const [error, setError] = useState('');
 
-  // --- Carregar Dados (Listas e Reserva existente) ---
+  // --- [NOVO] Efeito para calcular o total automaticamente ---
+  useEffect(() => {
+    const dias = calcularDias(formData.data_checkin, formData.data_checkout);
+    setDiasEstadia(dias);
+    
+    // O total é calculado baseados nos dias * valor da diária
+    const totalCalculado = dias * valorDiaria;
+    
+    setFormData(prev => ({
+      ...prev,
+      valor_total: totalCalculado
+    }));
+  }, [formData.data_checkin, formData.data_checkout, valorDiaria]);
+
+  // --- Carregar Dados ---
   useEffect(() => {
     if (isOpen) {
       setError('');
-      setIsLoading(true); // Loading principal
-      setIsLoadingLists(true); // Loading das listas
+      setIsLoading(true);
+      setIsLoadingLists(true);
 
-      // Busca clientes e quartos em paralelo
       Promise.all([getClientes(), getQuartos()])
         .then(([clientesData, quartosData]) => {
           setClientes(clientesData);
           setQuartos(quartosData);
+          return quartosData; // Retorna quartos para usar no encadeamento se necessário
         })
-        .catch(() => setError('Falha ao carregar lista de clientes ou quartos.'))
-        .finally(() => setIsLoadingLists(false));
+        .then((quartosCarregados) => {
+          // Se for edição
+          if (reservaId) {
+            return getReservaById(reservaId).then(data => {
+              const dias = calcularDias(data.data_checkin.split('T')[0], data.data_checkout.split('T')[0]);
+              
+              // Tenta calcular a diária baseada no total salvo / dias
+              // Se dias for 0, usa 0 para evitar divisão por zero
+              const diariaCalculada = dias > 0 ? (data.valor_total || 0) / dias : 0;
 
-      // Carrega dados da reserva se estiver em modo de edição
-      if (reservaId) {
-        getReservaById(reservaId)
-          .then(data => {
-            setFormData({
-              id_cliente: data.id_cliente || '',
-              id_quarto: data.id_quarto || '', // Carrega o quarto da reserva
-              data_checkin: data.data_checkin.split('T')[0],
-              data_checkout: data.data_checkout.split('T')[0],
-              status: data.status,
-              valor_total: data.valor_total || 0,
-              observacoes: data.observacoes || '',
+              setValorDiaria(diariaCalculada);
+
+              setFormData({
+                id_cliente: data.id_cliente || '',
+                id_quarto: data.id_quarto || '',
+                data_checkin: data.data_checkin.split('T')[0],
+                data_checkout: data.data_checkout.split('T')[0],
+                status: data.status,
+                valor_total: data.valor_total || 0,
+                observacoes: data.observacoes || '',
+              });
             });
-          })
-          .catch(() => setError('Falha ao carregar dados da reserva.'))
-          .finally(() => setIsLoading(false)); // Finaliza loading principal
-      }
-      // Modo Criação
-      else {
-        setFormData({
-          id_cliente: '',
-          id_quarto: quartoId || '', // Pré-seleciona o quarto se veio do mapa
-          data_checkin: initialDate || '',
-          data_checkout: initialDate || '',
-          status: 'Pendente',
-          valor_total: 0,
-          observacoes: '',
+          } 
+          // Se for criação
+          else {
+            // Se veio com quarto pré-selecionado (clique no mapa), tenta pegar o preço dele
+            let precoInicial = 0;
+            if (quartoId) {
+              const quartoPre = quartosCarregados.find((q: Quarto) => q.id === quartoId);
+              if (quartoPre) precoInicial = quartoPre.preco_diaria;
+            }
+
+            setValorDiaria(precoInicial);
+            setFormData({
+              id_cliente: '',
+              id_quarto: quartoId || '',
+              data_checkin: initialDate || '',
+              data_checkout: initialDate || '', // Check-out começa igual check-in por padrão
+              status: 'Pendente',
+              valor_total: 0,
+              observacoes: '',
+            });
+          }
+        })
+        .catch((err) => {
+            console.error(err);
+            setError('Falha ao carregar dados.');
+        })
+        .finally(() => {
+            setIsLoadingLists(false);
+            setIsLoading(false);
         });
-        setIsLoading(false); // Finaliza loading principal
-      }
     }
-  }, [isOpen, reservaId, quartoId, initialDate]); // Dependências atualizadas
+  }, [isOpen, reservaId, quartoId, initialDate]);
 
   // --- Handlers ---
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value, type } = e.target;
-    
-    // [CORRIGIDO] Removida a diretiva @ts-expect-error desnecessária
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'number' ? parseFloat(value) || 0 : value,
-    }));
-  };
-
-  // Handlers específicos para os Selects
-  const handleSelectChange = (name: string, value: string) => {
+    const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  // [NOVO] Handler exclusivo para a diária (que não está no formData diretamente)
+  const handleDiariaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = parseFloat(e.target.value) || 0;
+    setValorDiaria(val);
+  };
+
+  const handleSelectChange = (name: string, value: string) => {
+    setFormData(prev => ({ ...prev, [name]: value }));
+
+    // [NOVO] Se mudou o quarto, atualiza o valor da diária com o preço base do quarto
+    if (name === 'id_quarto') {
+        const quartoSelecionado = quartos.find(q => q.id === value);
+        if (quartoSelecionado) {
+            setValorDiaria(quartoSelecionado.preco_diaria || 0);
+        }
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Validação básica
     if (!formData.id_cliente || !formData.id_quarto || !formData.data_checkin || !formData.data_checkout) {
         setError('Cliente, Quarto, Check-in e Check-out são obrigatórios.');
         return;
     }
-    // Validação de datas
     if (new Date(formData.data_checkout) <= new Date(formData.data_checkin)) {
       setError('A data de Check-out deve ser posterior à data de Check-in.');
       return;
@@ -147,29 +201,21 @@ export default function BookingModal({ isOpen, onClose, onSave, reservaId, quart
     setIsLoading(true);
     setError('');
 
-    // Prepara os dados para enviar (apenas os necessários)
     const dataToSubmit = {
-      id_cliente: formData.id_cliente,
-      id_quarto: formData.id_quarto,
-      data_checkin: formData.data_checkin,
-      data_checkout: formData.data_checkout,
-      status: formData.status,
-      valor_total: formData.valor_total || null, // Envia null se for 0 ou vazio
-      observacoes: formData.observacoes || null, // Envia null se vazio
+      ...formData,
+      valor_total: formData.valor_total || null,
+      observacoes: formData.observacoes || null,
     };
 
     try {
       if (reservaId) {
-        // Agora 'dataToSubmit' é compatível com 'ReservaUpdatePayload'
         await updateReserva(reservaId, dataToSubmit);
       } else {
-        // E também é compatível com 'ReservaPayload' (desde que todos os campos obrigatórios estejam lá)
         await createReserva(dataToSubmit);
       }
-      onSave(); // Recarrega o mapa
-      onClose(); // Fecha o modal
+      onSave();
+      onClose();
     } catch (err) {
-      // [CORRIGIDO] Removida a diretiva @ts-expect-error desnecessária
       setError(err instanceof Error ? err.message : 'Ocorreu um erro.');
     } finally {
       setIsLoading(false);
@@ -177,7 +223,6 @@ export default function BookingModal({ isOpen, onClose, onSave, reservaId, quart
   };
 
   const handleDelete = async () => {
-    // ... (lógica de apagar mantida)
     if (reservaId && window.confirm('Tem a certeza que deseja apagar esta reserva?')) {
       setIsLoading(true);
       try {
@@ -211,20 +256,17 @@ export default function BookingModal({ isOpen, onClose, onSave, reservaId, quart
           </Alert>
         )}
 
-        {/* Mostra loading enquanto busca dados */}
         {(isLoading || isLoadingLists) && <p className="text-center text-gray-500 my-4">A carregar...</p>}
 
-        {/* Só mostra o formulário quando os dados estiverem prontos */}
         {!isLoading && !isLoadingLists && (
           <form onSubmit={handleSubmit} className="space-y-4">
 
-            {/* Seleção de Cliente */}
+            {/* Cliente */}
             <div>
               <Label htmlFor="id_cliente">Cliente *</Label>
               <Select
                 name="id_cliente"
                 value={formData.id_cliente}
-                // Adiciona tipo 'string' ao parâmetro value
                 onValueChange={(value: string) => handleSelectChange('id_cliente', value)}
                 required
                 disabled={isLoading}
@@ -244,21 +286,19 @@ export default function BookingModal({ isOpen, onClose, onSave, reservaId, quart
                   )}
                 </SelectContent>
               </Select>
-               <Link href="/admin/clientes/novo" className="text-xs text-blue-600 hover:underline mt-1 inline-block" target="_blank"> {/* Abre em nova aba */}
+               <Link href="/admin/clientes/novo" className="text-xs text-blue-600 hover:underline mt-1 inline-block" target="_blank">
                  + Adicionar novo cliente
                </Link>
             </div>
 
-            {/* Seleção de Quarto */}
+            {/* Quarto */}
             <div>
               <Label htmlFor="id_quarto">Quarto *</Label>
               <Select
                 name="id_quarto"
                 value={formData.id_quarto}
-                 // Adiciona tipo 'string' ao parâmetro value
                 onValueChange={(value: string) => handleSelectChange('id_quarto', value)}
                 required
-                // Desabilita se o quarto foi pré-selecionado pelo mapa (modo criação)
                 disabled={isLoading || (!!quartoId && !reservaId)}
               >
                 <SelectTrigger>
@@ -268,7 +308,7 @@ export default function BookingModal({ isOpen, onClose, onSave, reservaId, quart
                   {quartos.length > 0 ? (
                     quartos.map(q => (
                       <SelectItem key={q.id} value={q.id}>
-                        Nº {q.numero} - {q.titulo} ({q.status})
+                        Nº {q.numero} - {q.titulo} (R$ {q.preco_diaria})
                       </SelectItem>
                     ))
                   ) : (
@@ -277,7 +317,6 @@ export default function BookingModal({ isOpen, onClose, onSave, reservaId, quart
                 </SelectContent>
               </Select>
             </div>
-
 
             {/* Datas */}
             <div className="grid grid-cols-2 gap-4">
@@ -291,14 +330,13 @@ export default function BookingModal({ isOpen, onClose, onSave, reservaId, quart
               </div>
             </div>
 
-            {/* Status e Valor */}
-            <div className="grid grid-cols-2 gap-4">
+            {/* Status e Cálculo de Valor */}
+            <div className="grid grid-cols-2 gap-4 items-end">
               <div>
                 <Label htmlFor="status">Status</Label>
                 <Select
                   name="status"
                   value={formData.status}
-                   // Adiciona tipo 'string' ao parâmetro value
                   onValueChange={(value: string) => handleSelectChange('status', value)}
                   disabled={isLoading}
                 >
@@ -313,10 +351,27 @@ export default function BookingModal({ isOpen, onClose, onSave, reservaId, quart
                     </SelectContent>
                 </Select>
               </div>
+
+              {/* Campo editável da Diária */}
               <div>
-                <Label htmlFor="valor_total">Valor Total (R$)</Label>
-                <Input id="valor_total" name="valor_total" type="number" step="0.01" value={formData.valor_total} onChange={handleChange} disabled={isLoading}/>
+                <Label htmlFor="valor_diaria">Valor Diária (R$)</Label>
+                <Input 
+                    id="valor_diaria" 
+                    type="number" 
+                    step="0.01" 
+                    value={valorDiaria} 
+                    onChange={handleDiariaChange} 
+                    disabled={isLoading}
+                />
               </div>
+            </div>
+
+            {/* [NOVO] Mostrador do Total Calculado (Apenas Leitura) */}
+            <div className="bg-gray-50 p-3 rounded-md border border-gray-200 flex justify-between items-center">
+                <span className="text-sm text-gray-600 font-medium">Total Estimado ({diasEstadia} diárias):</span>
+                <span className="text-lg font-bold text-green-700">
+                    R$ {formData.valor_total.toFixed(2)}
+                </span>
             </div>
 
             {/* Observações */}
@@ -357,4 +412,3 @@ export default function BookingModal({ isOpen, onClose, onSave, reservaId, quart
     </div>
   );
 }
-
