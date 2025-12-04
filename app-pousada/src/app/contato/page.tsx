@@ -94,7 +94,7 @@ export default function ContatoPage() {
 
     message += `\n\nAguardo retorno!`
 
-    const numeroWhatsApp = "5583996872334"; // Número de WhatsApp da Pousada Zekas (PB)
+    const numeroWhatsApp = "5583993825342"; // Número de WhatsApp da Pousada Zekas (PB)
     const whatsappUrl = `https://wa.me/${numeroWhatsApp}?text=${encodeURIComponent(message)}`
     window.open(whatsappUrl, '_blank')
     
@@ -259,7 +259,7 @@ export default function ContatoPage() {
                   Contato Direto
                 </h3>
                 <div className="space-y-4">
-                  <a href="tel:+5583996872334" className="flex items-center gap-3 p-3 rounded-lg hover:bg-[#6B8E23]/5 transition-colors group">
+                  <a href="tel:+5583993825342" className="flex items-center gap-3 p-3 rounded-lg hover:bg-[#6B8E23]/5 transition-colors group">
                     <div className="w-10 h-10 bg-[#008080]/10 rounded-full flex items-center justify-center group-hover:bg-[#008080]/20 transition-colors">
                       <Phone className="w-5 h-5 text-[#008080]" />
                     </div>
@@ -268,7 +268,7 @@ export default function ContatoPage() {
                       <p className="text-sm text-[#2F4F4F]/70">Clique para ligar</p>
                     </div>
                   </a>
-                  <a href="https://wa.me/5583996872334" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 rounded-lg hover:bg-[#25D366]/5 transition-colors group">
+                  <a href="https://wa.me/5583993825342" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 rounded-lg hover:bg-[#25D366]/5 transition-colors group">
                     <div className="w-10 h-10 bg-[#25D366]/10 rounded-full flex items-center justify-center group-hover:bg-[#25D366]/20 transition-colors">
                       <MessageCircle className="w-5 h-5 text-[#25D366]" />
                     </div>
@@ -393,7 +393,7 @@ export default function ContatoPage() {
             Não perca tempo! Entre em contato conosco agora e garante sua reserva na Pousada Zekas.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <a href="https://wa.me/5583996872334" target="_blank" rel="noopener noreferrer">
+            <a href="https://wa.me/5583993825342" target="_blank" rel="noopener noreferrer">
               <Button size="lg" className="bg-[#25D366] hover:bg-[#20BA5A] text-white flex items-center gap-2">
                 <MessageCircle className="w-5 h-5" />
                 WhatsApp Agora

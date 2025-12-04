@@ -26,7 +26,7 @@ export default function Footer() {
               {/* --- MODIFICAÇÃO: Telefone Atualizado --- */}
               <div className="flex items-center gap-2">
                 <Phone className="w-4 h-4" />
-                <span>(83) 99687-2334</span>
+                <span>(83) 99382-5342</span>
               </div>
               {/* --- MODIFICAÇÃO: Email Atualizado --- */}
               <div className="flex items-center gap-2">

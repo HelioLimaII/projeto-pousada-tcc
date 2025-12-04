@@ -172,7 +172,7 @@ export default function HomePage() {
           <p className="text-xl mb-8 opacity-90">Entre em contato conosco e reserve já suas datas</p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/contato"><Button size="lg" variant="secondary" className="bg-white text-[#008080] hover:bg-gray-100 shadow hover:shadow-md transition-all">Ver Contato e Reservar</Button></Link>
-            <a href="tel:+5583996872334"><Button size="lg" variant="outline" className="bg-transparent border-white text-white hover:bg-white/10 shadow hover:shadow-md transition-all"><Phone className="w-4 h-4 mr-2" />Ligar Agora (WhatsApp)</Button></a>
+            <a href="tel:+5583993825342"><Button size="lg" variant="outline" className="bg-transparent border-white text-white hover:bg-white/10 shadow hover:shadow-md transition-all"><Phone className="w-4 h-4 mr-2" />Ligar Agora (WhatsApp)</Button></a>
           </div>
         </div>
       </section>

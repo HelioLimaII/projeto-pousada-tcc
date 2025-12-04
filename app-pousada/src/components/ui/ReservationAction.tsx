@@ -30,7 +30,7 @@ export default function ReservationAction({ quartoNumero, precoDiaria }: Reserva
 
   // Seu número de WhatsApp (COM DDI e DDD, apenas números)
   // Exemplo: 5583999999999
-  const TELEFONE_POUSADA = "5583999999999"; 
+  const TELEFONE_POUSADA = "5583993825342"; 
 
   // Calcula o total automaticamente
   useEffect(() => {
