@@ -4,13 +4,13 @@ const nextConfig = {
   images: {
     // Domínios/Padrões remotos permitidos para otimização de imagem
     remotePatterns: [
-      {
+      /*{
         // Permite imagens do seu backend FastAPI (fotos dos quartos)
         protocol: 'http', // Mude para 'https' se o seu backend usar HTTPS
         hostname: 'localhost',
         port: '8000', // Porta do seu backend
         pathname: '/static/images/**', // Permite qualquer imagem dentro desta pasta
-      },
+      },*/
       {
         // **** ADICIONADO: Permite imagens do Cloudinary ****
         protocol: 'https', // Cloudinary usa HTTPS
