@@ -1,7 +1,7 @@
-// Em: src/components/admin/ClienteForm.tsx
+// Em: src/components/ui/admin/ClienteForm.tsx
 'use client';
 
-import { useState, useEffect } from 'react'; // useEffect ainda pode ser necessário para outras coisas, mas não para initialData
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -26,14 +26,12 @@ interface ClienteFormData {
 
 // Interface para definir as propriedades que o componente recebe
 interface ClienteFormProps {
-  initialData?: Partial<ClienteFormData>; // Dados iniciais para edição (opcional)
-  onSubmit: (formData: ClienteFormData) => void; // Função chamada ao submeter
-  isLoading: boolean; // Indica se está a carregar (para desativar botões)
+  initialData?: Partial<ClienteFormData>;
+  onSubmit: (formData: ClienteFormData) => void;
+  isLoading: boolean;
 }
 
 export default function ClienteForm({ initialData = {}, onSubmit, isLoading }: ClienteFormProps) {
-  // Estado para guardar os dados do formulário
-  // A inicialização aqui é suficiente para definir os valores iniciais
   const [formData, setFormData] = useState<ClienteFormData>({
     nome: initialData.nome || '',
     cpf: initialData.cpf || '',
@@ -49,42 +47,43 @@ export default function ClienteForm({ initialData = {}, onSubmit, isLoading }: C
     observacoes: initialData.observacoes || '',
   });
 
-  // *** O useEffect que causava o loop foi REMOVIDO ***
-  // useEffect(() => {
-  //   setFormData({ ... }); // Este bloco foi removido
-  // }, [initialData]);
-
-  // Função para atualizar o estado quando um campo do formulário muda
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // Função chamada quando o formulário é submetido
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault(); // Impede o recarregamento da página
-    onSubmit(formData); // Chama a função onSubmit passada como prop
+    e.preventDefault();
+    onSubmit(formData);
   };
 
   return (
     <Card>
       <CardHeader>
-        {/* Título dinâmico: Editar ou Adicionar */}
         <CardTitle>{initialData.nome ? 'Editar Cliente' : 'Adicionar Novo Cliente'}</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Nome */}
+          
+          {/* Nome - O ÚNICO CAMPO OBRIGATÓRIO */}
           <div className="space-y-2">
             <Label htmlFor="nome">Nome Completo *</Label>
-            <Input id="nome" name="nome" value={formData.nome} onChange={handleChange} required disabled={isLoading} />
+            <Input 
+              id="nome" 
+              name="nome" 
+              value={formData.nome} 
+              onChange={handleChange} 
+              required // <--- Mantido apenas aqui
+              disabled={isLoading} 
+              placeholder="Ex: João da Silva"
+            />
           </div>
 
-          {/* CPF e RG */}
+          {/* CPF e RG (Opcionais) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="cpf">CPF</Label>
-              <Input id="cpf" name="cpf" value={formData.cpf} onChange={handleChange} disabled={isLoading} />
+              <Input id="cpf" name="cpf" value={formData.cpf} onChange={handleChange} disabled={isLoading} placeholder="000.000.000-00" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="rg">RG/Passaporte</Label>
@@ -92,23 +91,24 @@ export default function ClienteForm({ initialData = {}, onSubmit, isLoading }: C
             </div>
           </div>
 
-          {/* Email e Telefone */}
+          {/* Email e Telefone (Opcionais) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" name="email" type="email" value={formData.email} onChange={handleChange} disabled={isLoading} />
+              <Input id="email" name="email" type="email" value={formData.email} onChange={handleChange} disabled={isLoading} placeholder="cliente@email.com" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="telefone">Telefone</Label>
-              <Input id="telefone" name="telefone" type="tel" value={formData.telefone} onChange={handleChange} disabled={isLoading} />
+              <Input id="telefone" name="telefone" type="tel" value={formData.telefone} onChange={handleChange} disabled={isLoading} placeholder="(00) 00000-0000" />
             </div>
           </div>
 
-          {/* Endereço Completo */}
+          {/* Endereço Completo (Opcional) */}
           <div className="space-y-2">
             <Label htmlFor="endereco">Endereço (Rua, Nº)</Label>
             <Input id="endereco" name="endereco" value={formData.endereco} onChange={handleChange} disabled={isLoading} />
           </div>
+          
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="bairro">Bairro</Label>
@@ -123,6 +123,7 @@ export default function ClienteForm({ initialData = {}, onSubmit, isLoading }: C
               <Input id="cidade" name="cidade" value={formData.cidade} onChange={handleChange} disabled={isLoading} />
             </div>
           </div>
+          
            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
              <div className="space-y-2">
               <Label htmlFor="estado">Estado</Label>
@@ -134,10 +135,18 @@ export default function ClienteForm({ initialData = {}, onSubmit, isLoading }: C
             </div>
            </div>
 
-          {/* Observações */}
+          {/* Observações (Opcional) */}
           <div className="space-y-2">
             <Label htmlFor="observacoes">Observações</Label>
-            <Textarea id="observacoes" name="observacoes" value={formData.observacoes} onChange={handleChange} disabled={isLoading} rows={3} />
+            <Textarea 
+              id="observacoes" 
+              name="observacoes" 
+              value={formData.observacoes} 
+              onChange={handleChange} 
+              disabled={isLoading} 
+              rows={3} 
+              placeholder="Preferências, alergias, etc."
+            />
           </div>
 
           {/* Botão de Submissão */}

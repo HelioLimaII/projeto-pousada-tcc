@@ -32,7 +32,7 @@ except Exception as e:
     print(f"❌ Erro ao configurar Cloudinary. Verifique as variáveis de ambiente: {e}")
 # ----------------------------------
 
-# --- Função Auxiliar (Sem alterações) ---
+# --- Função Auxiliar ---
 def quarto_helper(quarto) -> dict:
     fotos = quarto.get("fotos", [])
     if fotos is None:
@@ -50,7 +50,7 @@ def quarto_helper(quarto) -> dict:
         "comodidades": quarto.get("comodidades", []),
     }
 
-# --- Rotas GET (Sem alterações) ---
+# --- Rotas GET ---
 @router.get("", response_description="Lista todos os quartos")
 async def obter_todos_os_quartos():
     quartos = []
@@ -80,7 +80,7 @@ async def buscar_quarto_por_id(id: str):
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Quarto com ID {id} não encontrado")
 
 
-# --- Rota POST para Criar um Quarto (Sem alterações) ---
+# --- Rota POST para Criar um Quarto ---
 @router.post(
     "",
     response_description="Adiciona um novo quarto",
@@ -93,14 +93,15 @@ async def criar_quarto(
     status: str = Form(...),
     preco_diaria: float = Form(...),
     capacidade_hospedes: int = Form(...),
-    comodidades: List[str] = Form(...),
+    # [REMOVIDO] comodidades: List[str] = Form(...), 
     images: Optional[List[UploadFile]] = File(None), 
     current_user: UsuarioInDB = Depends(get_current_user)
 ):
     novo_quarto_dict = {
         "numero": numero, "titulo": titulo, "descricao": descricao,
         "status": status, "preco_diaria": preco_diaria,
-        "capacidade_hospedes": capacidade_hospedes, "comodidades": comodidades,
+        "capacidade_hospedes": capacidade_hospedes, 
+        "comodidades": [], # [MODIFICADO] Envia lista vazia por padrão
         "fotos": []
     }
 
@@ -160,8 +161,7 @@ async def criar_quarto(
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Quarto não encontrado após a criação.")
 
 
-# --- [INÍCIO DA CORREÇÃO] ---
-# --- Rota PUT para Atualizar um Quarto (LÓGICA CORRIGIDA) ---
+# --- Rota PUT para Atualizar um Quarto ---
 @router.put("/{id}", response_description="Atualiza um quarto")
 async def atualizar_quarto(
     id: str,
@@ -171,7 +171,7 @@ async def atualizar_quarto(
     status: Optional[str] = Form(None),
     preco_diaria: Optional[float] = Form(None),
     capacidade_hospedes: Optional[int] = Form(None),
-    comodidades: Optional[List[str]] = Form(None),
+    # [REMOVIDO] comodidades: Optional[List[str]] = Form(None),
     images: Optional[List[UploadFile]] = File(None), 
     current_user: UsuarioInDB = Depends(get_current_user)
 ):
@@ -186,23 +186,20 @@ async def atualizar_quarto(
          print(f"Erro ao buscar quarto {id} para atualizar: {e}")
          raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Erro interno ao buscar quarto para atualização.")
 
-    # Prepara os dados de texto para atualização
     dados_para_atualizar = {}
     update_data = {
         "numero": numero, "titulo": titulo, "descricao": descricao,
         "status": status, "preco_diaria": preco_diaria,
-        "capacidade_hospedes": capacidade_hospedes, "comodidades": comodidades
+        "capacidade_hospedes": capacidade_hospedes
+        # [REMOVIDO] "comodidades": comodidades
     }
     for key, value in update_data.items():
         if value is not None:
             dados_para_atualizar[key] = value
 
-    # --- LÓGICA DE FOTOS CORRIGIDA ---
-    # Se novas imagens foram enviadas (images is not None e não está vazio),
-    # faz o upload e SUBSTITUI a lista de fotos antiga.
     if images:
         print(f"Recebidas {len(images)} novas fotos. SUBSTITUINDO lista antiga para o quarto {id}.")
-        urls_novas_cloudinary = [] # Começa uma lista NOVA
+        urls_novas_cloudinary = []
         
         for idx, foto in enumerate(images):
             if foto.filename:
@@ -210,11 +207,11 @@ async def atualizar_quarto(
                 try:
                     upload_result = cloudinary.uploader.upload(
                         foto.file,
-                        folder=f"pousada_zekas/quartos/{id}" # Guarda na pasta do quarto existente
+                        folder=f"pousada_zekas/quartos/{id}"
                     )
                     nova_url = upload_result.get('secure_url')
                     if nova_url:
-                        urls_novas_cloudinary.append(nova_url) # Adiciona à lista NOVA
+                        urls_novas_cloudinary.append(nova_url)
                         print(f"Nova foto {foto.filename} adicionada: {nova_url}")
                     else:
                         print(f"AVISO: Upload da foto {foto.filename} retornou sem URL segura.")
@@ -224,17 +221,9 @@ async def atualizar_quarto(
             else:
                 print(f"AVISO: Upload {idx+1} recebido sem nome de ficheiro na atualização.")
 
-        # Define o campo 'fotos' nos dados a atualizar com a NOVA lista
         dados_para_atualizar["fotos"] = urls_novas_cloudinary
         print(f"Lista de fotos SUBSTITUÍDA para o quarto {id}.")
-        
-    # Se 'images' estiver vazio (o usuário não enviou fotos novas),
-    # a chave 'fotos' NÃO é adicionada a 'dados_para_atualizar'.
-    # Isso preserva a lista de fotos que já estava no banco.
-    # --- FIM DA LÓGICA DE FOTOS CORRIGIDA ---
 
-
-    # Executa a atualização no MongoDB
     if len(dados_para_atualizar) >= 1:
         print(f"Atualizando dados do quarto {id} no MongoDB.")
         try:
@@ -243,10 +232,9 @@ async def atualizar_quarto(
             print(f"❌ Erro ao atualizar quarto {id} no MongoDB: {e}")
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Erro ao atualizar quarto na base de dados: {e}")
     else:
-        print(f"Nenhum dado novo (texto ou fotos) para atualizar para o quarto {id}.")
+        print(f"Nenhum dado novo para atualizar para o quarto {id}.")
 
 
-    # Busca e retorna o quarto atualizado
     try:
         quarto_atualizado = collection_quartos.find_one({"_id": ObjectId(id)})
         if quarto_atualizado:
@@ -257,7 +245,6 @@ async def atualizar_quarto(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Erro ao buscar o quarto após a atualização.")
 
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Quarto com ID {id} não encontrado após atualização.")
-# --- [FIM DA CORREÇÃO] ---
 
 
 # --- Rota DELETE (Sem alterações) ---
@@ -268,17 +255,10 @@ async def deletar_quarto(id: str, current_user: UsuarioInDB = Depends(get_curren
 
     try:
         print(f"Tentando apagar quarto {id} do MongoDB.")
-        # --- Adiciona busca pelas fotos ANTES de apagar ---
         quarto_para_apagar = collection_quartos.find_one({"_id": ObjectId(id)})
         if not quarto_para_apagar:
              raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Quarto com ID {id} não encontrado")
         
-        # Pega os public_ids das fotos para apagar do Cloudinary
-        # (Esta parte da lógica de apagar já estava boa, mas precisa
-        # ser executada ANTES de apagar o quarto do DB, ou então 
-        # você perde a referência das fotos)
-        
-        # Vamos apagar do DB primeiro, como estava no seu original
         resultado = collection_quartos.delete_one({"_id": ObjectId(id)})
 
     except Exception as e:
@@ -288,7 +268,6 @@ async def deletar_quarto(id: str, current_user: UsuarioInDB = Depends(get_curren
 
     if resultado.deleted_count == 1:
         print(f"Quarto {id} apagado com sucesso do MongoDB.")
-        # --- Lógica de apagar do Cloudinary (sem alterações) ---
         folder_path = f"pousada_zekas/quartos/{id}"
         try:
             print(f"Tentando apagar recursos do Cloudinary na pasta: {folder_path}")

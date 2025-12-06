@@ -1,3 +1,5 @@
+// Em: src/components/ui/admin/QuartoForm.tsx
+
 'use client';
 
 import { useState } from 'react';
@@ -10,12 +12,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 // Interface para os dados do formulário
 interface QuartoFormData {
   numero: number;
-  //titulo: string;
+  // titulo: string; // Removido
   descricao: string;
   preco_diaria: number;
   capacidade_hospedes: number;
   status: string;
-  comodidades: string[];
+  // comodidades: string[]; // Removido
 }
 
 // Interface para as props do componente
@@ -28,12 +30,12 @@ interface QuartoFormProps {
 export default function QuartoForm({ initialData = {}, onSubmit, isLoading }: QuartoFormProps) {
   const [formData, setFormData] = useState<QuartoFormData>({
     numero: initialData.numero || 0,
-    //titulo: initialData.titulo || '',
+    // titulo: initialData.titulo || '', 
     descricao: initialData.descricao || '',
     preco_diaria: initialData.preco_diaria || 0,
     capacidade_hospedes: initialData.capacidade_hospedes || 1,
     status: initialData.status || 'disponivel',
-    comodidades: initialData.comodidades || [],
+    // comodidades: initialData.comodidades || [],
   });
   const [fotos, setFotos] = useState<FileList | null>(null);
 
@@ -41,11 +43,6 @@ export default function QuartoForm({ initialData = {}, onSubmit, isLoading }: Qu
     const { name, value } = e.target;
     const finalValue = e.target.type === 'number' ? parseFloat(value) || 0 : value;
     setFormData(prev => ({ ...prev, [name]: finalValue }));
-  };
-  
-  const handleComodidadesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const comodidadesArray = e.target.value.split(',').map(item => item.trim());
-    setFormData(prev => ({ ...prev, comodidades: comodidadesArray }));
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -56,22 +53,12 @@ export default function QuartoForm({ initialData = {}, onSubmit, isLoading }: Qu
     e.preventDefault();
     const data = new FormData();
 
-    // Adiciona os campos de texto e números ao FormData
     Object.entries(formData).forEach(([key, value]) => {
-      if (key === 'comodidades' && Array.isArray(value)) {
-        // Trata o array de comodidades
-        value.forEach(item => data.append(key, item));
-      } else {
-        // Trata os outros campos
-        data.append(key, String(value));
-      }
+      data.append(key, String(value));
     });
 
-    // Adiciona os arquivos de imagem
     if (fotos) {
       for (let i = 0; i < fotos.length; i++) {
-        // [MODIFICAÇÃO AQUI]
-        // Alterado de 'novas_fotos' para 'images' para alinhar com o plano do backend
         data.append('images', fotos[i]);
       }
     }
@@ -117,12 +104,6 @@ export default function QuartoForm({ initialData = {}, onSubmit, isLoading }: Qu
               <option value="ocupado">Ocupado</option>
               <option value="manutencao">Em Manutenção</option>
             </select>
-          </div>
-
-          {/* Comodidades */}
-          <div className="space-y-2">
-            <Label htmlFor="comodidades">Comodidades (separadas por vírgula)</Label>
-            <Input id="comodidades" name="comodidades" type="text" value={formData.comodidades.join(', ')} onChange={handleComodidadesChange} />
           </div>
 
           {/* Upload de Fotos */}

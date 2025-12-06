@@ -19,7 +19,6 @@ interface Quarto {
   status: string;
 }
 
-// --- FUNÇÃO PARA ESTILIZAR O STATUS ---
 const StatusBadge = ({ status }: { status: string }) => {
   const statusInfo = {
     disponivel: { text: "Disponível", color: "bg-green-500" },
@@ -37,11 +36,7 @@ const StatusBadge = ({ status }: { status: string }) => {
 
 export default function QuartoCard({ quarto }: { quarto: Quarto }) {
   const isDisponivel = quarto.status?.toLowerCase() === 'disponivel';
-
-  // A URL agora vem DIRETAMENTE do banco de dados (Cloudinary)
-  const imageUrl = (quarto.fotos && quarto.fotos.length > 0)
-                   ? quarto.fotos[0] 
-                   : "/placeholder-5t9d5.png"; 
+  const imageUrl = (quarto.fotos && quarto.fotos.length > 0) ? quarto.fotos[0] : "/placeholder-5t9d5.png"; 
 
   return (
     <Card className="overflow-hidden flex flex-col hover:shadow-xl transition-all duration-300 border border-gray-200 group h-full">
@@ -63,20 +58,16 @@ export default function QuartoCard({ quarto }: { quarto: Quarto }) {
       </div>
 
       <CardContent className="p-4 flex flex-col flex-grow">
-        
-        {/* --- [MODIFICAÇÃO AQUI] Título Padronizado --- */}
         <div className="mb-2">
             <h3 className="text-xl font-bold text-[#2F4F4F] truncate">
                 Quarto {quarto.numero}
             </h3>
-            {/* Mostra o título original (descrição curta) logo abaixo */}
             {quarto.titulo && (
                 <p className="text-sm font-medium text-[#6B8E23] truncate">
                     {quarto.titulo}
                 </p>
             )}
         </div>
-        {/* --------------------------------------------- */}
 
         <p className="text-sm text-[#2F4F4F]/80 mb-3 line-clamp-2 flex-grow">{quarto.descricao}</p>
 
@@ -85,10 +76,7 @@ export default function QuartoCard({ quarto }: { quarto: Quarto }) {
             <Users className="w-4 h-4 text-[#6B8E23]" />
             <span>Até {quarto.capacidade_hospedes}</span>
           </div>
-          <span className="text-lg font-bold text-[#008080]">
-            R$ {quarto.preco_diaria?.toFixed(2)}
-            <span className="text-xs font-normal text-[#2F4F4F]/60 ml-1">/diária</span>
-          </span>
+          {/* [MODIFICAÇÃO] Preço removido daqui */}
         </div>
 
         <div className="mt-auto pt-3 border-t border-gray-200/60">
