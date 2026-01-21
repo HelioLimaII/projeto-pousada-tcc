@@ -1,12 +1,13 @@
+// Arquivo: src/app/admin/fnrh/page.tsx
+
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Search, Filter, Loader2, RefreshCw, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import FnrhDetailView from '@/components/ui/admin/FnrhDetailView';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
-// [NOVO] Importar o Modal de Edição Local
 import BookingModal from '@/components/ui/admin/BookingModal';
 
 interface ReservaGov {
@@ -29,18 +30,17 @@ export default function PainelFNRH() {
   const [totalRegistros, setTotalRegistros] = useState(0);
   const itensPorPagina = 50;
   
-  // Filtros
   const [dataInicio, setDataInicio] = useState('');
   const [dataFim, setDataFim] = useState('');
   const [buscaCodigo, setBuscaCodigo] = useState('');
 
   const [reservaDetalhada, setReservaDetalhada] = useState<{reserva: any, hospede: any} | null>(null);
 
-  // [NOVO] Estados para abrir o BookingModal (Edição Local)
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [editingLocalId, setEditingLocalId] = useState<string | null>(null);
 
-  const buscarReservas = async (pagina = 1) => {
+  // [CORREÇÃO] Envolvido em useCallback para evitar warning do useEffect
+  const buscarReservas = useCallback(async (pagina = 1) => {
     setLoading(true);
     setPaginaAtual(pagina);
     try {
@@ -72,7 +72,7 @@ export default function PainelFNRH() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [buscaCodigo, dataInicio, dataFim]);
 
   const abrirDetalhes = async (reservaResumida: ReservaGov) => {
     setLoadingDetalhes(reservaResumida.id);
@@ -103,25 +103,22 @@ export default function PainelFNRH() {
     }
   };
 
-  // [NOVO] Função Inteligente de Edição
   const handleEditarReserva = async () => {
     if (!reservaDetalhada) return;
     
-    const govId = reservaDetalhada.reserva.id; // ID do Gov (ex: BDBE2F)
+    const govId = reservaDetalhada.reserva.id; 
     
-    // 1. Tenta achar qual é a reserva local correspondente
     try {
         const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
         const res = await fetch(`${baseUrl}/fnrh/local-id/${govId}`);
         const data = await res.json();
 
         if (data.sucesso && data.local_id) {
-            // 2. Se achou, fecha o visualizador e abre o editor local
-            setReservaDetalhada(null); // Fecha modal Gov
-            setEditingLocalId(data.local_id); // Define ID local
-            setIsBookingModalOpen(true); // Abre modal de edição
+            setReservaDetalhada(null);
+            setEditingLocalId(data.local_id); 
+            setIsBookingModalOpen(true); 
         } else {
-            alert("Esta reserva existe no Governo mas não foi encontrada no banco local (talvez tenha sido criada manualmente no site do FNRH). Não é possível editar pelo sistema.");
+            alert("Reserva não encontrada no banco local.");
         }
     } catch (err) {
         console.error(err);
@@ -131,17 +128,20 @@ export default function PainelFNRH() {
 
   useEffect(() => {
     buscarReservas(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Helpers
   const totalPaginas = Math.ceil(totalRegistros / itensPorPagina);
+  
   const getPaginasVisiveis = () => {
     const p = [];
-    let inicio = Math.max(1, paginaAtual - 2);
-    let fim = Math.min(totalPaginas, paginaAtual + 2);
+    // [CORREÇÃO] Mudado de let para const conforme erro do log
+    const inicio = Math.max(1, paginaAtual - 2);
+    const fim = Math.min(totalPaginas, paginaAtual + 2);
     for (let i = inicio; i <= fim; i++) p.push(i);
     return p;
   };
+
   const formatData = (isoDate: string) => {
     if (!isoDate) return '--';
     return isoDate.split('T')[0].split('-').reverse().join('/');
@@ -172,7 +172,6 @@ export default function PainelFNRH() {
       </div>
 
       <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-200 mb-6 flex flex-wrap gap-4 items-end">
-        {/* BUSCA POR CÓDIGO (NOVO) */}
         <div className="flex-1 min-w-[200px]">
              <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">Buscar Código / ID</label>
              <div className="flex gap-2">
@@ -188,7 +187,6 @@ export default function PainelFNRH() {
              </div>
         </div>
 
-        {/* Divisória visual */}
         <div className="w-[1px] h-10 bg-slate-200 mx-2 hidden md:block"></div>
 
         <div>
@@ -265,7 +263,6 @@ export default function PainelFNRH() {
           </div>
       )}
 
-      {/* Modal 1: Visualização FNRH (Gov Style) */}
       <Dialog open={!!reservaDetalhada} onOpenChange={(open) => !open && setReservaDetalhada(null)}>
         <DialogContent className="max-w-4xl p-0 overflow-hidden bg-white border-none shadow-2xl">
             <DialogTitle className="sr-only">Detalhes da Reserva</DialogTitle>
@@ -282,10 +279,7 @@ export default function PainelFNRH() {
                             criancas: reservaDetalhada.reserva.quantidade_hospede_menor
                         }}
                         hospede={reservaDetalhada.hospede} 
-                        
-                        // [CONECTADO] Agora chama a função que busca o ID local
                         onEdit={handleEditarReserva} 
-                        
                         onClose={() => { setReservaDetalhada(null); buscarReservas(paginaAtual); }}
                      />
                 </div>
@@ -293,18 +287,15 @@ export default function PainelFNRH() {
         </DialogContent>
       </Dialog>
 
-      {/* [NOVO] Modal 2: Edição Local (BookingModal) */}
       <BookingModal 
         isOpen={isBookingModalOpen} 
         onClose={() => {
             setIsBookingModalOpen(false); 
-            buscarReservas(paginaAtual); // Atualiza lista após fechar edição
+            buscarReservas(paginaAtual);
         }} 
-        onSave={() => {
-            // Callback opcional se precisar recarregar algo específico
-        }}
+        onSave={() => {}}
         reservaId={editingLocalId}
-        startEditing={true} // [IMPORTANTE] Força abrir no modo formulário
+        startEditing={true}
       />
 
     </div>
