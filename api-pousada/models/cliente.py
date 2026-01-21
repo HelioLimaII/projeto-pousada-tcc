@@ -4,27 +4,38 @@ from pydantic import BaseModel, Field
 from typing import Optional
 
 class Cliente(BaseModel):
-    # Apenas o Nome é obrigatório (...)
+    # --- Obrigatório ---
     nome: str = Field(..., description="Nome completo do cliente")
     
-    # Todos os outros campos são opcionais (default=None)
+    # --- Documentos (Mantidos para compatibilidade com Front-end) ---
     cpf: Optional[str] = Field(default=None, description="CPF do cliente")
-    rg: Optional[str] = Field(default=None, description="RG ou Passaporte do cliente")
+    rg: Optional[str] = Field(default=None, description="RG ou Passaporte")
     
-    # Alterado para str para aceitar vazio caso não seja preenchido
+    # --- Contato ---
     email: Optional[str] = Field(default=None, description="Email do cliente") 
-    
     telefone: Optional[str] = Field(default=None, description="Telefone do cliente")
     
-    # Endereço
-    endereco: Optional[str] = Field(default=None, description="Endereço (Rua, Nº)")
-    bairro: Optional[str] = Field(default=None, description="Bairro")
-    cep: Optional[str] = Field(default=None, description="CEP")
-    cidade: Optional[str] = Field(default=None, description="Cidade")
-    estado: Optional[str] = Field(default=None, description="Estado")
-    pais: Optional[str] = Field(default=None, description="País")
+    # --- Novos Campos Exigidos pelo FNRH ---
+    data_nascimento: Optional[str] = Field(default=None, description="Formato AAAA-MM-DD")
+    genero: Optional[str] = Field(default=None, description="M = Masculino, F = Feminino")
+    nacionalidade: Optional[str] = Field(default="BR", description="Código do País (BR, AR, etc.)")
     
-    observacoes: Optional[str] = Field(default=None, description="Observações sobre o cliente")
+    # --- Endereço Básico (Mantido) ---
+    endereco: Optional[str] = Field(default=None, description="Endereço completo unificado")
+    
+    # --- Endereço Detalhado (Para FNRH) ---
+    endereco_logradouro: Optional[str] = Field(default=None, description="Rua, Avenida, etc.")
+    endereco_numero: Optional[str] = Field(default=None, description="Número")
+    endereco_complemento: Optional[str] = Field(default=None, description="Apto, Bloco")
+    endereco_bairro: Optional[str] = Field(default=None, description="Bairro")
+    endereco_cep: Optional[str] = Field(default=None, description="CEP")
+    endereco_cidade: Optional[str] = Field(default=None, description="Cidade")
+    endereco_estado: Optional[str] = Field(default=None, description="Estado (UF)")
+    endereco_pais: Optional[str] = Field(default="BR", description="País")
+    
+    # --- Controle ---
+    observacoes: Optional[str] = Field(default=None, description="Observações")
+    fnrh_id: Optional[str] = Field(default=None, description="ID do hóspede no sistema do governo")
 
 class UpdateCliente(BaseModel):
     nome: Optional[str] = None
@@ -32,10 +43,17 @@ class UpdateCliente(BaseModel):
     rg: Optional[str] = None
     email: Optional[str] = None
     telefone: Optional[str] = None
+    data_nascimento: Optional[str] = None
+    genero: Optional[str] = None
+    nacionalidade: Optional[str] = None
     endereco: Optional[str] = None
-    bairro: Optional[str] = None
-    cep: Optional[str] = None
-    cidade: Optional[str] = None
-    estado: Optional[str] = None
-    pais: Optional[str] = None
+    endereco_logradouro: Optional[str] = None
+    endereco_numero: Optional[str] = None
+    endereco_complemento: Optional[str] = None
+    endereco_bairro: Optional[str] = None
+    endereco_cep: Optional[str] = None
+    endereco_cidade: Optional[str] = None
+    endereco_estado: Optional[str] = None
+    endereco_pais: Optional[str] = None
     observacoes: Optional[str] = None
+    fnrh_id: Optional[str] = None

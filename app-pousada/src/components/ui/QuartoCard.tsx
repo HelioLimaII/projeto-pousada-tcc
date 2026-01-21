@@ -1,16 +1,17 @@
-// Em: src/components/ui/QuartoCard.tsx
+// Arquivo: src/components/ui/QuartoCard.tsx
 'use client'
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Wifi, Car, Coffee, Tv, Users } from 'lucide-react';
+import { Users } from 'lucide-react';
 
 interface Quarto {
   id: string;
   numero: number;
-  titulo: string;
+  titulo: string | null; // Pode vir null do banco
   descricao: string;
   preco_diaria: number;
   capacidade_hospedes: number;
@@ -20,15 +21,17 @@ interface Quarto {
 }
 
 const StatusBadge = ({ status }: { status: string }) => {
-  const statusInfo = {
+  const statusInfo: Record<string, { text: string, color: string }> = {
     disponivel: { text: "Disponível", color: "bg-green-500" },
     ocupado: { text: "Ocupado", color: "bg-red-500" },
     manutencao: { text: "Manutenção", color: "bg-yellow-500 text-black" }, 
   };
-  const info = statusInfo[status?.toLowerCase() as keyof typeof statusInfo] || { text: status || 'Indefinido', color: "bg-gray-400" };
+  
+  const normalizedStatus = status?.toLowerCase() || '';
+  const info = statusInfo[normalizedStatus] || { text: status || 'Indefinido', color: "bg-gray-400" };
 
   return (
-    <span className={`inline-block ${info.color} text-white px-2.5 py-0.5 rounded-full text-xs font-semibold`}>
+    <span className={`inline-block ${info.color} text-white px-2.5 py-0.5 rounded-full text-xs font-semibold shadow-sm`}>
       {info.text}
     </span>
   );
@@ -36,19 +39,33 @@ const StatusBadge = ({ status }: { status: string }) => {
 
 export default function QuartoCard({ quarto }: { quarto: Quarto }) {
   const isDisponivel = quarto.status?.toLowerCase() === 'disponivel';
-  const imageUrl = (quarto.fotos && quarto.fotos.length > 0) ? quarto.fotos[0] : "/placeholder-5t9d5.png"; 
+  
+  // URL de Placeholder segura (da internet) para garantir que sempre apareça algo
+  const PLACEHOLDER_URL = "https://placehold.co/600x400/e2e8f0/1e293b?text=Sem+Foto";
+
+  // Define a imagem inicial: A primeira do array OU o placeholder
+  const [imgSrc, setImgSrc] = useState(PLACEHOLDER_URL);
+
+  useEffect(() => {
+    if (quarto.fotos && quarto.fotos.length > 0) {
+      setImgSrc(quarto.fotos[0]);
+    } else {
+      setImgSrc(PLACEHOLDER_URL);
+    }
+  }, [quarto.fotos]);
 
   return (
-    <Card className="overflow-hidden flex flex-col hover:shadow-xl transition-all duration-300 border border-gray-200 group h-full">
-      <div className="relative h-48 sm:h-56 overflow-hidden">
+    <Card className="overflow-hidden flex flex-col hover:shadow-xl transition-all duration-300 border border-gray-200 group h-full bg-white">
+      <div className="relative h-48 sm:h-56 overflow-hidden bg-gray-100">
         <Link href={`/quartos/${quarto.id}`} className="block w-full h-full">
             <Image
-              src={imageUrl} 
-              alt={`Foto principal do quarto ${quarto.titulo}`}
+              src={imgSrc} 
+              alt={`Foto do Quarto ${quarto.numero}`}
               fill
-              className="object-cover group-hover:scale-105 transition-transform duration-300"
+              className="object-cover group-hover:scale-105 transition-transform duration-500"
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-              onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder-5t9d5.png'; }}
+              // Se a imagem do Cloudinary falhar, troca pelo placeholder via Estado
+              onError={() => setImgSrc(PLACEHOLDER_URL)}
               priority={false}
             />
         </Link>
@@ -62,31 +79,36 @@ export default function QuartoCard({ quarto }: { quarto: Quarto }) {
             <h3 className="text-xl font-bold text-[#2F4F4F] truncate">
                 Quarto {quarto.numero}
             </h3>
-            {quarto.titulo && (
-                <p className="text-sm font-medium text-[#6B8E23] truncate">
-                    {quarto.titulo}
-                </p>
-            )}
+            <p className="text-sm font-medium text-[#6B8E23] truncate h-5">
+                {quarto.titulo || 'Acomodação Standard'}
+            </p>
         </div>
 
-        <p className="text-sm text-[#2F4F4F]/80 mb-3 line-clamp-2 flex-grow">{quarto.descricao}</p>
+        <p className="text-sm text-[#2F4F4F]/80 mb-3 line-clamp-2 flex-grow">
+          {quarto.descricao || 'Sem descrição disponível.'}
+        </p>
 
-        <div className="flex items-center justify-between text-sm mb-3">
-          <div className="flex items-center gap-1 text-[#2F4F4F]/80">
+        <div className="flex items-center justify-between text-sm mb-4 pt-2 border-t border-gray-100">
+          <div className="flex items-center gap-1.5 text-[#2F4F4F]/80">
             <Users className="w-4 h-4 text-[#6B8E23]" />
-            <span>Até {quarto.capacidade_hospedes}</span>
+            <span className="font-medium">Até {quarto.capacidade_hospedes} pessoas</span>
           </div>
-          {/* [MODIFICAÇÃO] Preço removido daqui */}
+          <div className="font-bold text-[#2F4F4F] text-lg">
+             R$ {quarto.preco_diaria?.toFixed(2)}
+          </div>
         </div>
 
-        <div className="mt-auto pt-3 border-t border-gray-200/60">
-          <Link href={`/quartos/${quarto.id}`}>
+        <div className="mt-auto">
+          <Link href={`/quartos/${quarto.id}`} className="w-full block">
              <Button
-              className="w-full bg-[#6B8E23] hover:bg-[#5a7a1f] text-white transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+              className={`w-full transition-colors font-semibold ${
+                isDisponivel 
+                  ? "bg-[#6B8E23] hover:bg-[#5a7a1f] text-white shadow-md hover:shadow-lg" 
+                  : "bg-gray-200 text-gray-500 cursor-not-allowed hover:bg-gray-200"
+              }`}
               disabled={!isDisponivel}
-              aria-label={isDisponivel ? `Ver detalhes do quarto ${quarto.numero}` : `Quarto ${quarto.numero} indisponível`}
             >
-              {isDisponivel ? 'Ver Detalhes' : 'Indisponível'}
+              {isDisponivel ? 'Reservar Agora' : 'Indisponível'}
             </Button>
           </Link>
         </div>

@@ -1,4 +1,3 @@
-// Em: src/app/admin/layout.tsx
 'use client'; // Necessário para hooks e interatividade (logout e pathname)
 
 import ProtectedRoute from "@/components/ui/ProtectedRoute";
@@ -25,6 +24,8 @@ export default function AdminLayout({
     { href: '/admin/dashboard', label: 'Mapa de Reservas' },
     { href: '/admin/quartos', label: 'Gerenciar Quartos' },
     { href: '/admin/clientes', label: 'Gerenciar Clientes' },
+    // [NOVO] Adicionado o link para o painel do governo
+    { href: '/admin/fnrh', label: 'Painel FNRH (Gov)' }, 
   ];
 
   return (
@@ -35,7 +36,7 @@ export default function AdminLayout({
           <nav className="container mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-16">
             <div className="flex items-center space-x-4">
               <span className="font-bold text-lg text-[#2F4F4F]">Admin Pousada</span>
-              {/* === LINKS DE NAVEGAÇÃO ADICIONADOS === */}
+              {/* === LINKS DE NAVEGAÇÃO === */}
               <div className="hidden md:flex items-center space-x-1"> {/* Esconde em ecrãs pequenos */}
                 {navLinks.map((link) => (
                   <Link
@@ -58,8 +59,6 @@ export default function AdminLayout({
               Sair
             </Button>
           </nav>
-           {/* === NAVEGAÇÃO PARA ECRÃS PEQUENOS (OPCIONAL) === */}
-           {/* Pode adicionar aqui um menu "hamburger" se quiser suportar melhor telemóveis */}
         </header>
 
         {/* Conteúdo da Página */}
@@ -69,5 +68,4 @@ export default function AdminLayout({
       </div>
     </ProtectedRoute>
   );
-}
-
+} 

@@ -1,28 +1,29 @@
+// Arquivo: app-pousada/next.config.ts
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: true, // Modo estrito do React (bom para desenvolvimento)
+  reactStrictMode: true,
   images: {
-    // Domínios/Padrões remotos permitidos para otimização de imagem
+    // [CORREÇÃO] Permite que o placehold.co exiba SVGs
+    dangerouslyAllowSVG: true,
+    contentDispositionType: 'attachment',
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
+
     remotePatterns: [
-      /*{
-        // Permite imagens do seu backend FastAPI (fotos dos quartos)
-        protocol: 'http', // Mude para 'https' se o seu backend usar HTTPS
-        hostname: 'localhost',
-        port: '8000', // Porta do seu backend
-        pathname: '/static/images/**', // Permite qualquer imagem dentro desta pasta
-      },*/
       {
-        // **** ADICIONADO: Permite imagens do Cloudinary ****
-        protocol: 'https', // Cloudinary usa HTTPS
-        hostname: 'res.cloudinary.com', // << CONFIRME SE ESTE É O HOSTNAME DA SUA URL
-        port: '', // Porta padrão (vazio)
-        pathname: '/**', // Permite qualquer imagem da sua conta Cloudinary
-        // Pode ser mais específico se quiser, ex: '/SEU_CLOUD_NAME/image/upload/**'
+        protocol: 'https',
+        hostname: 'res.cloudinary.com',
+        port: '',
+        pathname: '/**',
       },
-      // Pode adicionar mais padrões para outros serviços de imagem aqui
+      {
+        protocol: 'https',
+        hostname: 'placehold.co',
+        port: '',
+        pathname: '/**',
+      },
     ],
   },
 };
 
-module.exports = nextConfig;
-
+export default nextConfig;
