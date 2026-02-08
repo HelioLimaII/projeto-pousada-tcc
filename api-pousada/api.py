@@ -34,8 +34,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# [CORREÇÃO CRÍTICA PARA DEPLOY]
+# Cria a pasta 'static' se ela não existir no servidor (ex: Render)
+# Isso evita o erro "RuntimeError: Directory 'static' does not exist"
+if not os.path.exists("static"):
+    os.makedirs("static")
+
 # [ATIVO] Servir ficheiros estáticos (Imagens locais, se houver)
-# Mantido descomentado para uso local conforme sua observação
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Incluir as rotas
@@ -51,15 +56,3 @@ app.include_router(fnrh_router, prefix="/fnrh", tags=["FNRH - Governo"])
 @app.get("/")
 async def root():
     return {"message": "Bem-vindo à API da Pousada Zekas (Com FNRH)"}
-
-import os  # <--- Certifique-se de importar isso no topo
-from fastapi.staticfiles import StaticFiles # <--- Certifique-se que já tem isso
-
-# ... (outros códigos) ...
-
-# [CORREÇÃO] Cria a pasta static se ela não existir
-if not os.path.exists("static"):
-    os.makedirs("static")
-
-# Agora o mount vai funcionar porque a pasta existe
-app.mount("/static", StaticFiles(directory="static"), name="static")
