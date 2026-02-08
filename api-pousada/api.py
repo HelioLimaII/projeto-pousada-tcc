@@ -51,3 +51,15 @@ app.include_router(fnrh_router, prefix="/fnrh", tags=["FNRH - Governo"])
 @app.get("/")
 async def root():
     return {"message": "Bem-vindo à API da Pousada Zekas (Com FNRH)"}
+
+import os  # <--- Certifique-se de importar isso no topo
+from fastapi.staticfiles import StaticFiles # <--- Certifique-se que já tem isso
+
+# ... (outros códigos) ...
+
+# [CORREÇÃO] Cria a pasta static se ela não existir
+if not os.path.exists("static"):
+    os.makedirs("static")
+
+# Agora o mount vai funcionar porque a pasta existe
+app.mount("/static", StaticFiles(directory="static"), name="static")
