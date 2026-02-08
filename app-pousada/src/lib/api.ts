@@ -1,6 +1,5 @@
 // src/lib/api.ts
 
-// Lógica dinâmica: Pega do .env se existir, senão usa fallback local
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
 
 // --- INTERFACES ---
@@ -34,6 +33,8 @@ export interface ReservaPayload {
   status: string;
   valor_total?: number | null;
   observacoes?: string | null;
+  fnrh_reserva_id?: string | null;
+  fnrh_sincronizado?: boolean | null;
 }
 
 export type ReservaUpdatePayload = Partial<ReservaPayload>;
@@ -42,6 +43,30 @@ export type ReservaUpdatePayload = Partial<ReservaPayload>;
 const getAuthToken = (): string | null => {
   if (typeof window === 'undefined') return null;
   return localStorage.getItem('accessToken');
+};
+
+const handleResponse = async (res: Response, errorMsg: string) => {
+    if (!res.ok) {
+        let message = errorMsg;
+        try {
+            const err = await res.json();
+            const rawMessage = err.detail || err.message || err.msg;
+            if (rawMessage) {
+                if (typeof rawMessage === 'object') {
+                    message = JSON.stringify(rawMessage, null, 2);
+                } else {
+                    message = String(rawMessage);
+                }
+            } else {
+                message = JSON.stringify(err, null, 2);
+            }
+        } catch (e) {
+            const text = await res.text().catch(() => null);
+            if (text) message = text;
+        }
+        throw new Error(message);
+    }
+    return res.json();
 };
 
 // --- AUTH ---
@@ -53,11 +78,7 @@ export const login = async (username: string, password: string) => {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
       body: formBody.toString(),
     });
-    if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || 'Falha no login');
-    }
-    return response.json();
+    return handleResponse(response, 'Falha no login');
   } catch (error) {
     console.error("Erro no login:", error);
     throw error;
@@ -65,61 +86,42 @@ export const login = async (username: string, password: string) => {
 };
 
 // --- QUARTOS ---
-
 export const getQuartos = async () => {
   const response = await fetch(`${API_BASE_URL}/quartos`);
-  if (!response.ok) throw new Error('Falha ao buscar quartos');
-  return response.json();
+  return handleResponse(response, 'Falha ao buscar quartos');
 };
 
 export const getQuartoById = async (id: string) => {
   const response = await fetch(`${API_BASE_URL}/quartos/${id}`);
-  if (!response.ok) throw new Error('Falha ao buscar quarto');
-  return response.json();
+  return handleResponse(response, 'Falha ao buscar quarto');
 };
 
 export const createQuarto = async (data: any) => {
   const token = getAuthToken();
   const isFormData = data instanceof FormData;
-
-  const headers: HeadersInit = {
-    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-  };
-
-  if (!isFormData) {
-    headers['Content-Type'] = 'application/json';
-  }
+  const headers: HeadersInit = { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) };
+  if (!isFormData) headers['Content-Type'] = 'application/json';
 
   const response = await fetch(`${API_BASE_URL}/quartos`, {
     method: 'POST',
     headers: headers,
     body: isFormData ? data : JSON.stringify(data),
   });
-
-  if (!response.ok) throw new Error('Falha ao criar quarto');
-  return response.json();
+  return handleResponse(response, 'Falha ao criar quarto');
 };
 
 export const updateQuarto = async (id: string, data: any) => {
   const token = getAuthToken();
   const isFormData = data instanceof FormData;
-
-  const headers: HeadersInit = {
-    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-  };
-
-  if (!isFormData) {
-    headers['Content-Type'] = 'application/json';
-  }
+  const headers: HeadersInit = { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) };
+  if (!isFormData) headers['Content-Type'] = 'application/json';
 
   const response = await fetch(`${API_BASE_URL}/quartos/${id}`, {
     method: 'PUT',
     headers: headers,
     body: isFormData ? data : JSON.stringify(data),
   });
-
-  if (!response.ok) throw new Error('Falha ao atualizar quarto');
-  return response.json();
+  return handleResponse(response, 'Falha ao atualizar quarto');
 };
 
 export const deleteQuarto = async (id: string) => {
@@ -138,8 +140,7 @@ export const getReservas = async () => {
   const response = await fetch(`${API_BASE_URL}/reservas`, {
     headers: token ? { 'Authorization': `Bearer ${token}` } : {}
   });
-  if (!response.ok) throw new Error('Falha ao buscar reservas');
-  return response.json();
+  return handleResponse(response, 'Falha ao buscar reservas');
 };
 
 export const getReservaById = async (id: string) => {
@@ -147,8 +148,7 @@ export const getReservaById = async (id: string) => {
     const response = await fetch(`${API_BASE_URL}/reservas/${id}`, {
       headers: token ? { 'Authorization': `Bearer ${token}` } : {}
     });
-    if (!response.ok) throw new Error('Falha ao buscar reserva');
-    return response.json();
+    return handleResponse(response, 'Falha ao buscar reserva');
 };
 
 export const createReserva = async (data: ReservaPayload) => {
@@ -161,11 +161,7 @@ export const createReserva = async (data: ReservaPayload) => {
     },
     body: JSON.stringify(data),
   });
-  if (!response.ok) {
-     const err = await response.json().catch(() => ({}));
-     throw new Error(err.detail || 'Falha ao criar reserva');
-  }
-  return response.json();
+  return handleResponse(response, 'Falha ao criar reserva');
 };
 
 export const updateReserva = async (id: string, data: ReservaUpdatePayload) => {
@@ -178,8 +174,7 @@ export const updateReserva = async (id: string, data: ReservaUpdatePayload) => {
     },
     body: JSON.stringify(data),
   });
-  if (!response.ok) throw new Error('Falha ao atualizar reserva');
-  return response.json();
+  return handleResponse(response, 'Falha ao atualizar reserva');
 };
 
 export const deleteReserva = async (id: string) => {
@@ -198,8 +193,7 @@ export const getClientes = async () => {
   const response = await fetch(`${API_BASE_URL}/clientes`, {
     headers: token ? { 'Authorization': `Bearer ${token}` } : {}
   });
-  if (!response.ok) throw new Error('Falha ao buscar clientes');
-  return response.json();
+  return handleResponse(response, 'Falha ao buscar clientes');
 };
 
 export const getClienteById = async (id: string) => {
@@ -207,8 +201,7 @@ export const getClienteById = async (id: string) => {
     const response = await fetch(`${API_BASE_URL}/clientes/${id}`, {
       headers: token ? { 'Authorization': `Bearer ${token}` } : {}
     });
-    if (!response.ok) throw new Error('Falha ao buscar cliente');
-    return response.json();
+    return handleResponse(response, 'Falha ao buscar cliente');
 };
 
 export const createCliente = async (clienteData: ClientePayload) => {
@@ -221,11 +214,7 @@ export const createCliente = async (clienteData: ClientePayload) => {
     },
     body: JSON.stringify(clienteData),
   });
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.detail || 'Falha ao criar cliente');
-  }
-  return response.json();
+  return handleResponse(response, 'Falha ao criar cliente');
 };
 
 export const updateCliente = async (id: string, clienteData: Partial<ClientePayload>) => {
@@ -238,11 +227,7 @@ export const updateCliente = async (id: string, clienteData: Partial<ClientePayl
     },
     body: JSON.stringify(clienteData),
   });
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.detail || 'Falha ao atualizar cliente');
-  }
-  return response.json();
+  return handleResponse(response, 'Falha ao atualizar cliente');
 };
 
 export const deleteCliente = async (id: string) => {
@@ -255,22 +240,99 @@ export const deleteCliente = async (id: string) => {
   return true;
 };
 
-// --- FNRH (Integração Simplificada) ---
-export const realizarCheckinFnrh = async (reservaId: string) => {
+// --- FNRH / INTEGRAÇÃO GOV.BR ---
+
+export const listarReservasFnrh = async (pagina = 1, codigo = '') => {
+    const token = getAuthToken();
+    const query = codigo ? `&codigo=${codigo}` : '';
+    const response = await fetch(`${API_BASE_URL}/fnrh/listar?pagina=${pagina}${query}`, {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+    });
+    return response.json(); 
+};
+
+export const buscarPreCheckinGov = async (cpf: string) => {
+    const token = getAuthToken();
+    const response = await fetch(`${API_BASE_URL}/fnrh/consultar-cpf/${cpf}`, {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+    });
+    return response.json();
+};
+
+export const criarReservaFnrh = async (payload: {
+    codigo_reserva: string;
+    data_entrada: string;
+    data_saida: string;
+    adultos: number;
+    criancas: number;
+    id_local: string;
+}) => {
+    const token = getAuthToken();
+    const response = await fetch(`${API_BASE_URL}/fnrh/criar-reserva`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify(payload),
+    });
+    return handleResponse(response, 'Erro ao criar reserva no FNRH');
+};
+
+export const vincularHospedeFnrh = async (reservaIdGov: string, hospedeIdGov: string) => {
+    const token = getAuthToken();
+    const response = await fetch(`${API_BASE_URL}/fnrh/vincular-hospede`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({
+            reserva_id_gov: reservaIdGov,
+            hospede_id_gov: hospedeIdGov
+        }),
+    });
+    return handleResponse(response, 'Erro ao vincular hóspede');
+};
+
+// [CORREÇÃO] Aceita dataHora e envia no BODY da requisição
+export const realizarCheckinFnrh = async (reservaId: string, dataHora?: string) => {
     const token = getAuthToken();
     
-    // A rota não espera body, apenas o ID da reserva na URL
-    const response = await fetch(`${API_BASE_URL}/fnrh/checkin/${reservaId}`, {
+    // Cria o payload JSON
+    const payload = {
+        data_hora: dataHora || new Date().toISOString()
+    };
+
+    // Adicionado o body na requisição fetch
+    const response = await fetch(`${API_BASE_URL}/fnrh/checkin-manual/${reservaId}`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
           ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
+        body: JSON.stringify(payload)
     });
+    return handleResponse(response, 'Erro ao processar Check-in FNRH');
+};
 
-    if (!response.ok) {
-        const err = await response.json().catch(() => ({}));
-        throw new Error(err.detail || 'Erro ao processar Check-in FNRH');
-    }
-    return response.json();
+// [CORREÇÃO] Aceita dataHora e envia no BODY da requisição
+export const realizarCheckoutFnrh = async (reservaId: string, dataHora?: string) => {
+    const token = getAuthToken();
+    
+    // Cria o payload JSON
+    const payload = {
+        data_hora: dataHora || new Date().toISOString()
+    };
+
+    // Adicionado o body na requisição fetch
+    const response = await fetch(`${API_BASE_URL}/fnrh/checkout-manual/${reservaId}`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify(payload)
+    });
+    return handleResponse(response, 'Erro ao processar Check-out FNRH');
 };

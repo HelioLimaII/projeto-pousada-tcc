@@ -1,365 +1,482 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
-import {
-    createReserva, updateReserva, getReservaById, getClientes, getQuartos, deleteReserva
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Loader2, CheckCircle, CloudLightning, ShieldCheck, Trash2, Hash, UserSearch, LogIn, LogOut } from 'lucide-react';
+import { 
+    getClientes, 
+    getQuartos, 
+    getReservaById, 
+    createReserva, 
+    updateReserva, 
+    deleteReserva, 
+    // Integração
+    buscarPreCheckinGov,
+    criarReservaFnrh,
+    vincularHospedeFnrh,
+    listarReservasFnrh,
+    realizarCheckinFnrh,
+    realizarCheckoutFnrh
 } from '@/lib/api';
-import { X } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 
-import FnrhCheckinButton from '@/components/ui/admin/FnrhCheckinButton';
-import FnrhDetailView from '@/components/ui/admin/FnrhDetailView';
-
-interface ModalProps {
+interface BookingModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: () => void;
   reservaId?: string | null;
   quartoId?: string | null;
   initialDate?: string;
-  startEditing?: boolean; // [NOVO] Prop para forçar o modo de edição
 }
-
-interface Cliente {
-  id: string;
-  nome: string;
-  cpf?: string; 
-  fnrh_id?: string;
-}
-
-interface Quarto {
-    id: string;
-    numero: number;
-    titulo: string;
-    status: string;
-    preco_diaria: number; 
-}
-
-const calcularDias = (inicio: string, fim: string) => {
-  if (!inicio || !fim) return 0;
-  const start = new Date(inicio);
-  const end = new Date(fim);
-  const diff = end.getTime() - start.getTime();
-  const days = Math.ceil(diff / (1000 * 3600 * 24));
-  return days > 0 ? days : 0;
-};
 
 export default function BookingModal({ 
-  isOpen, onClose, onSave, reservaId, quartoId, initialDate, startEditing 
-}: ModalProps) {
+  isOpen, 
+  onClose, 
+  onSave, 
+  reservaId, 
+  quartoId, 
+  initialDate 
+}: BookingModalProps) {
+  
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [sendingGov, setSendingGov] = useState(false);
+  const [processingAction, setProcessingAction] = useState(false); // Estado para Checkin/Checkout
+  
+  const [clientes, setClientes] = useState<any[]>([]);
+  const [quartos, setQuartos] = useState<any[]>([]);
+
+  const [fnrhCodigo, setFnrhCodigo] = useState('');
+  const [cpfParaEnvio, setCpfParaEnvio] = useState(''); 
+
   const [formData, setFormData] = useState({
     id_cliente: '',
-    id_quarto: '',
-    data_checkin: '',
-    data_checkout: '',
+    id_quarto: quartoId || '',
+    data_checkin: initialDate || '',
+    data_checkout: initialDate || '',
     status: 'Pendente',
-    codigo_reserva: '', 
     valor_total: 0, 
+    valor_diaria: 0, 
     observacoes: '',
+    fnrh_reserva_id: null as string | null,
+    fnrh_sincronizado: false
   });
 
-  const [fnrhIdGov, setFnrhIdGov] = useState<string | null>(null);
-  const [isEditing, setIsEditing] = useState(false);
-
-  const [valorDiaria, setValorDiaria] = useState<number>(0);
-  const [diasEstadia, setDiasEstadia] = useState<number>(0);
-  const [clientes, setClientes] = useState<Cliente[]>([]);
-  const [quartos, setQuartos] = useState<Quarto[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isLoadingLists, setIsLoadingLists] = useState(false);
-  const [error, setError] = useState('');
-
-  const clienteSelecionado = clientes.find(c => c.id === formData.id_cliente);
-
-  useEffect(() => {
-    const dias = calcularDias(formData.data_checkin, formData.data_checkout);
-    setDiasEstadia(dias);
-    const totalCalculado = dias * valorDiaria;
-    setFormData(prev => ({ ...prev, valor_total: totalCalculado }));
-  }, [formData.data_checkin, formData.data_checkout, valorDiaria]);
-
+  // Carregamento Inicial
   useEffect(() => {
     if (isOpen) {
-      setError('');
-      setIsLoading(true);
-      setIsLoadingLists(true);
-      setFnrhIdGov(null);
-      
-      // [ALTERAÇÃO] Se startEditing for true, força o modo de edição
-      setIsEditing(!!startEditing); 
-
-      Promise.all([getClientes(), getQuartos()])
-        .then(([clientesData, quartosData]) => {
+      const fetchData = async () => {
+        try {
+          const [clientesData, quartosData] = await Promise.all([getClientes(), getQuartos()]);
           setClientes(clientesData);
           setQuartos(quartosData);
-          return quartosData; 
-        })
-        .then((quartosCarregados) => {
-          if (reservaId) {
-            return getReservaById(reservaId).then(data => {
-              const dias = calcularDias(data.data_checkin.split('T')[0], data.data_checkout.split('T')[0]);
-              const diariaCalculada = dias > 0 ? (data.valor_total || 0) / dias : 0;
-              setValorDiaria(diariaCalculada);
-              
-              if (data.fnrh_reserva_id) {
-                  setFnrhIdGov(data.fnrh_reserva_id);
-              }
 
-              setFormData({
-                id_cliente: data.id_cliente || '',
-                id_quarto: data.id_quarto || '',
-                data_checkin: data.data_checkin.split('T')[0],
-                data_checkout: data.data_checkout.split('T')[0],
-                status: data.status,
-                codigo_reserva: data.codigo_reserva || reservaId.slice(-6).toUpperCase(),
-                valor_total: data.valor_total || 0,
-                observacoes: data.observacoes || '',
-              });
-            });
-          } 
-          else {
-            let precoInicial = 0;
-            if (quartoId) {
-              const quartoPre = quartosCarregados.find((q: Quarto) => q.id === quartoId);
-              if (quartoPre) precoInicial = quartoPre.preco_diaria;
-            }
-            setValorDiaria(precoInicial);
-            setFormData({
-              id_cliente: '',
-              id_quarto: quartoId || '',
-              data_checkin: initialDate || '',
-              data_checkout: initialDate || '', 
-              status: 'Pendente',
-              codigo_reserva: '',
-              valor_total: 0,
-              observacoes: '',
-            });
+          if (quartoId && !reservaId) {
+             const q = quartosData.find((x: any) => x._id === quartoId || x.id === quartoId);
+             if (q) setFormData(prev => ({ ...prev, id_quarto: quartoId, valor_diaria: q.preco_diaria || 0 }));
           }
+        } catch (error) { console.error(error); }
+      };
+      fetchData();
+    }
+  }, [isOpen, quartoId, reservaId]);
+
+  // Carregar Reserva Existente
+  useEffect(() => {
+    if (isOpen && reservaId) {
+      setLoading(true);
+      getReservaById(reservaId)
+        .then((data) => {
+          const start = new Date(data.data_checkin);
+          const end = new Date(data.data_checkout);
+          const diffDays = Math.ceil(Math.abs(end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) || 1;
+          const diariaEstimada = data.valor_total / diffDays;
+
+          setFormData({
+            id_cliente: data.id_cliente,
+            id_quarto: data.id_quarto,
+            data_checkin: data.data_checkin.split('T')[0],
+            data_checkout: data.data_checkout.split('T')[0],
+            status: data.status,
+            valor_total: data.valor_total,
+            valor_diaria: diariaEstimada, 
+            observacoes: data.observacoes || '',
+            fnrh_reserva_id: data.fnrh_reserva_id,
+            fnrh_sincronizado: !!data.fnrh_reserva_id
+          });
+          
+          setFnrhCodigo(reservaId.slice(-6).toUpperCase());
         })
-        .catch((err) => {
-            console.error(err);
-            setError('Falha ao carregar dados.');
-        })
-        .finally(() => {
-            setIsLoadingLists(false);
-            setIsLoading(false);
-        });
+        .finally(() => setLoading(false));
+    } else if (isOpen && !reservaId) {
+        setFormData(prev => ({
+            ...prev,
+            data_checkin: initialDate || '',
+            data_checkout: initialDate || '',
+            status: 'Pendente',
+            observacoes: '',
+            fnrh_reserva_id: null,
+            fnrh_sincronizado: false
+        }));
+        setFnrhCodigo('');
+        setCpfParaEnvio('');
     }
-  }, [isOpen, reservaId, quartoId, initialDate, startEditing]);
+  }, [isOpen, reservaId, initialDate]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+  // Preencher CPF ao selecionar cliente
+  useEffect(() => {
+      if (formData.id_cliente && clientes.length > 0) {
+          const cliente = clientes.find(c => (c._id || c.id) === formData.id_cliente);
+          if (cliente && (cliente.cpf || cliente.documento)) {
+              const cpfLimpo = (cliente.cpf || cliente.documento).replace(/\D/g, '');
+              setCpfParaEnvio(cpfLimpo);
+          }
+      }
+  }, [formData.id_cliente, clientes]);
+
+  // Cálculo Valor
+  useEffect(() => {
+    if (formData.data_checkin && formData.data_checkout && formData.valor_diaria) {
+        const start = new Date(formData.data_checkin);
+        const end = new Date(formData.data_checkout);
+        let diffDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+        if (diffDays < 1) diffDays = 0; 
+        setFormData(prev => ({ ...prev, valor_total: diffDays * prev.valor_diaria }));
+    }
+  }, [formData.data_checkin, formData.data_checkout, formData.valor_diaria]);
+
+  const handleQuartoChange = (novoIdQuarto: string) => {
+      const quarto = quartos.find(q => q._id === novoIdQuarto || q.id === novoIdQuarto);
+      const preco = quarto ? quarto.preco_diaria : 0;
+      setFormData(prev => ({ ...prev, id_quarto: novoIdQuarto, valor_diaria: preco }));
   };
 
-  const handleDiariaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setValorDiaria(parseFloat(e.target.value) || 0);
-  };
-
-  const handleSelectChange = (name: string, value: string) => {
-    setFormData(prev => ({ ...prev, [name]: value }));
-    if (name === 'id_quarto') {
-        const quartoSelecionado = quartos.find(q => q.id === value);
-        if (quartoSelecionado) setValorDiaria(quartoSelecionado.preco_diaria || 0);
-    }
-  };
-
-  const handleDelete = async () => {
-    if (!reservaId) return;
-    if (confirm('Tem certeza que deseja EXCLUIR essa reserva do mapa permanentemente?')) {
-        setIsLoading(true);
-        try {
-            await deleteReserva(reservaId);
-            onSave();
-            onClose();
-        } catch (err) {
-            console.error(err);
-            setError('Erro ao excluir reserva.');
-            setIsLoading(false);
-        }
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.id_cliente || !formData.id_quarto || !formData.data_checkin || !formData.data_checkout) {
-        setError('Campos obrigatórios faltando.');
-        return;
-    }
-    setIsLoading(true);
+  const handleSalvarLocal = async () => {
+    setSaving(true);
     try {
-      if (reservaId) await updateReserva(reservaId, formData);
-      else await createReserva(formData);
-      onSave();
-      onClose();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao salvar.');
+      const payload = { ...formData, valor_total: Number(formData.valor_total) };
+      if (reservaId) {
+        await updateReserva(reservaId, payload);
+      } else {
+        await createReserva(payload);
+      }
+      onSave(); 
+      onClose(); 
+    } catch (error) {
+      alert("Erro ao salvar reserva.");
+      console.error(error);
     } finally {
-      setIsLoading(false);
+      setSaving(false);
     }
   };
 
-  if (!isOpen) return null;
+  const handleExcluir = async () => {
+      if (!reservaId) return;
+      if (confirm("Tem certeza que deseja excluir esta reserva localmente?")) {
+          setDeleting(true);
+          try {
+              await deleteReserva(reservaId);
+              onSave(); 
+              onClose(); 
+          } catch (error) {
+              console.error(error);
+              alert("Erro ao excluir reserva.");
+          } finally {
+              setDeleting(false);
+          }
+      }
+  };
 
-  // --- MODO DE VISUALIZAÇÃO FNRH ---
-  // Exibe visualização APENAS SE temos ID Gov E NÃO ESTAMOS FORÇANDO EDIÇÃO (startEditing false)
-  if (reservaId && fnrhIdGov && !isEditing && !isLoading) {
-    return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4 overflow-y-auto">
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl my-8 overflow-hidden relative">
-                <div className="absolute top-2 right-2 z-10">
-                    <Button variant="ghost" size="icon" onClick={onClose}><X className="w-5 h-5"/></Button>
-                </div>
-                
-                <div className="p-8">
-                    <FnrhDetailView 
-                        reserva={{
-                            codigo: formData.codigo_reserva,
-                            fnrh_id: fnrhIdGov,
-                            status: formData.status, 
-                            checkin: formData.data_checkin.split('-').reverse().join('/'),
-                            checkout: formData.data_checkout.split('-').reverse().join('/'),
-                            adultos: 1, 
-                            criancas: 0
-                        }}
-                        hospede={{
-                            nome: clienteSelecionado?.nome || 'Hóspede',
-                            cpf: clienteSelecionado?.cpf || '',
-                            nascimento: '12/09/2001', 
-                            nacionalidade: 'Brasileiro',
-                            genero: 'Masculino'
-                        }}
-                        onEdit={() => setIsEditing(true)} 
-                        onClose={() => { onSave(); onClose(); }}
-                    />
-                </div>
-            </div>
-        </div>
-    );
-  }
+  // --- AÇÃO: ENVIAR PARA FNRH ---
+  const handleEnviarFNRH = async () => {
+      if (!reservaId) return alert("Salve a reserva antes de enviar.");
+      if (!fnrhCodigo) return alert("O Código da Reserva é obrigatório.");
+      if (!cpfParaEnvio || cpfParaEnvio.length < 11) return alert("Informe um CPF válido.");
 
-  // --- MODO FORMULÁRIO PADRÃO ---
+      const codigoNormalizado = fnrhCodigo.toUpperCase().trim();
+      setSendingGov(true);
+
+      try {
+          const buscaGov = await buscarPreCheckinGov(cpfParaEnvio);
+          if (!buscaGov.sucesso || !buscaGov.hospede) {
+              setSendingGov(false);
+              return alert(`❌ ERRO: Pré-checkin não encontrado para CPF ${cpfParaEnvio}.`);
+          }
+          const dadosHospedeGov = buscaGov.hospede;
+          const idHospedeReal = dadosHospedeGov.id || dadosHospedeGov.hospede_id;
+          
+          if (!idHospedeReal) {
+              setSendingGov(false);
+              return alert("Erro Interno: Hóspede sem ID.");
+          }
+
+          let idReservaGov = null;
+
+          try {
+              const resReserva = await criarReservaFnrh({
+                  codigo_reserva: codigoNormalizado,
+                  data_entrada: formData.data_checkin,
+                  data_saida: formData.data_checkout,
+                  adultos: 1, criancas: 0, id_local: reservaId
+              });
+              if (resReserva.sucesso) idReservaGov = resReserva.fnrh_reserva_id;
+          } catch (createError: any) {
+              const erroMsg = createError.message || "";
+              if (erroMsg.includes("já existe") || erroMsg.includes("já cadastrada")) {
+                  const listagem = await listarReservasFnrh(1, codigoNormalizado);
+                  if (listagem.sucesso && listagem.dados && listagem.dados.length > 0) {
+                      const reservaEncontrada = listagem.dados.find((r: any) => 
+                          (r.numero_reserva === codigoNormalizado) || (r.reserva?.numero_reserva === codigoNormalizado)
+                      ) || listagem.dados[0];
+                      idReservaGov = reservaEncontrada.id || reservaEncontrada.reserva_id || reservaEncontrada.reserva?.id;
+                  }
+                  if (!idReservaGov) throw new Error("Reserva já existe, mas não conseguimos recuperar o ID.");
+              } else {
+                  throw createError;
+              }
+          }
+
+          if (idReservaGov) {
+              try { await vincularHospedeFnrh(idReservaGov, idHospedeReal); } catch (e) { console.warn(e); }
+              
+              setFormData(prev => ({ ...prev, fnrh_sincronizado: true, fnrh_reserva_id: idReservaGov }));
+              try { await updateReserva(reservaId, { fnrh_sincronizado: true, fnrh_reserva_id: idReservaGov }); } catch (e) {}
+              
+              alert(`✅ SUCESSO! Reserva sincronizada.`);
+              onSave(); 
+          }
+      } catch (error: any) {
+          alert("Erro: " + error.message);
+      } finally {
+          setSendingGov(false);
+      }
+  };
+
+  // --- NOVAS AÇÕES: CHECK-IN / CHECK-OUT ---
+  const handleFazerCheckinGov = async () => {
+      if (!formData.fnrh_reserva_id) return;
+      if (!confirm(`Confirmar ENTRADA (Check-in) no Governo?`)) return;
+
+      setProcessingAction(true);
+      try {
+          // [CORREÇÃO] Gera data ISO e envia no body da requisição
+          const agora = new Date().toISOString();
+          await realizarCheckinFnrh(formData.fnrh_reserva_id, agora);
+          
+          setFormData(prev => ({ ...prev, status: 'Check-in' }));
+          await updateReserva(reservaId!, { status: 'Check-in' });
+          alert("Check-in realizado com sucesso!");
+          onSave();
+      } catch (error: any) {
+          alert("Erro Check-in: " + error.message);
+      } finally {
+          setProcessingAction(false);
+      }
+  };
+
+  const handleFazerCheckoutGov = async () => {
+      if (!formData.fnrh_reserva_id) return;
+      if (!confirm(`Confirmar SAÍDA (Check-out) no Governo?`)) return;
+
+      setProcessingAction(true);
+      try {
+          // [CORREÇÃO] Gera data ISO e envia no body da requisição
+          const agora = new Date().toISOString();
+          await realizarCheckoutFnrh(formData.fnrh_reserva_id, agora);
+          
+          setFormData(prev => ({ ...prev, status: 'Check-out' }));
+          await updateReserva(reservaId!, { status: 'Check-out' });
+          alert("Check-out realizado com sucesso!");
+          onSave();
+      } catch (error: any) {
+          alert("Erro Check-out: " + error.message);
+      } finally {
+          setProcessingAction(false);
+      }
+  };
+
+  const getDias = () => {
+      if (!formData.data_checkin || !formData.data_checkout) return 0;
+      const start = new Date(formData.data_checkin);
+      const end = new Date(formData.data_checkout);
+      const diff = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+      return diff > 0 ? diff : 0;
+  };
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4 overflow-y-auto">
-      <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-lg my-8">
-        <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold">{reservaId ? 'Editar Reserva' : 'Nova Reserva'}</h2>
-            {isEditing && (
-                <Button variant="outline" size="sm" onClick={() => setIsEditing(false)}>
-                    Voltar p/ Visualização
-                </Button>
-            )}
-        </div>
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[650px]">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+              {reservaId ? 'Gerenciar Reserva' : 'Nova Reserva'}
+              {formData.fnrh_sincronizado && (
+                  <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full flex items-center gap-1 border border-green-200">
+                      <ShieldCheck className="w-3 h-3"/> FNRH Ativo
+                  </span>
+              )}
+          </DialogTitle>
+        </DialogHeader>
 
-        {error && <Alert variant="destructive" className="mb-4"><AlertDescription>{error}</AlertDescription></Alert>}
-
-        {!isLoading && !isLoadingLists && (
-          <form onSubmit={handleSubmit} className="space-y-4">
+        {loading ? (
+          <div className="py-12 flex justify-center"><Loader2 className="animate-spin h-8 w-8 text-gray-400" /></div>
+        ) : (
+          <div className="space-y-6 py-2">
             
-            <div>
-              <Label>Cliente *</Label>
-              <Select name="id_cliente" value={formData.id_cliente} onValueChange={(v) => handleSelectChange('id_cliente', v)}>
-                <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                <SelectContent>
-                  {clientes.map(c => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
+            {/* DADOS LOCAIS */}
+            <div className="space-y-4">
+                <div className="grid gap-2">
+                    <Label>Cliente (Local) *</Label>
+                    <Select value={formData.id_cliente} onValueChange={(val) => setFormData({...formData, id_cliente: val})}>
+                        <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                        <SelectContent>
+                        {clientes.map((c: any) => (
+                            <SelectItem key={c._id || c.id} value={c._id || c.id}>
+                                {c.nome} - CPF: {c.cpf || '---'}
+                            </SelectItem>
+                        ))}
+                        </SelectContent>
+                    </Select>
+                </div>
 
-            <div className="grid grid-cols-2 gap-4">
-               <div><Label>Check-in</Label><Input type="date" name="data_checkin" value={formData.data_checkin} onChange={handleChange} /></div>
-               <div><Label>Check-out</Label><Input type="date" name="data_checkout" value={formData.data_checkout} onChange={handleChange} /></div>
-            </div>
-
-            <div>
-              <Label>Quarto *</Label>
-              <Select name="id_quarto" value={formData.id_quarto} onValueChange={(v) => handleSelectChange('id_quarto', v)}>
-                <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                <SelectContent>
-                  {quartos.map(q => (
-                    <SelectItem key={q.id} value={q.id}>
-                      Quarto {q.numero} - {q.titulo} (R$ {q.preco_diaria})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-                <Label>Situação da Reserva</Label>
-                <Select name="status" value={formData.status} onValueChange={(v) => handleSelectChange('status', v)}>
-                <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="Pendente">Pendente</SelectItem>
-                    <SelectItem value="Confirmada">Confirmada</SelectItem>
-                    <SelectItem value="Hospedado">Hospedado (Check-in)</SelectItem>
-                    <SelectItem value="Finalizada">Finalizada (Check-out)</SelectItem>
-                    <SelectItem value="Cancelada">Cancelada</SelectItem>
-                </SelectContent>
-                </Select>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4 bg-gray-50 p-3 rounded">
-                <div>
-                    <Label className="text-xs text-gray-500">Valor Diária</Label>
-                    <div className="flex items-center">
-                        <span className="mr-1 text-sm">R$</span>
-                        <Input type="number" step="0.01" value={valorDiaria} onChange={handleDiariaChange} className="h-8" />
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="grid gap-2">
+                        <Label>Entrada</Label>
+                        <Input type="date" value={formData.data_checkin} onChange={(e) => setFormData({...formData, data_checkin: e.target.value})}/>
+                    </div>
+                    <div className="grid gap-2">
+                        <Label>Saída</Label>
+                        <Input type="date" value={formData.data_checkout} onChange={(e) => setFormData({...formData, data_checkout: e.target.value})}/>
                     </div>
                 </div>
-                <div className="text-right">
-                    <Label className="text-xs text-gray-500">Total ({diasEstadia} dias)</Label>
-                    <div className="text-lg font-bold text-green-700">
-                        R$ {formData.valor_total.toFixed(2)}
+
+                <div className="grid gap-2">
+                    <Label>Quarto *</Label>
+                    <Select value={formData.id_quarto} onValueChange={handleQuartoChange}>
+                        <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                        <SelectContent>
+                        {quartos.map((q: any) => (
+                            <SelectItem key={q._id || q.id} value={q._id || q.id}>Quarto {q.numero} ({q.status})</SelectItem>
+                        ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 items-end">
+                    <div className="grid gap-2">
+                        <Label>Valor Diária</Label>
+                        <div className="relative">
+                            <span className="absolute left-3 top-2.5 text-gray-500 text-sm">R$</span>
+                            <Input type="number" className="pl-9" value={formData.valor_diaria} onChange={(e) => setFormData({...formData, valor_diaria: Number(e.target.value)})}/>
+                        </div>
+                    </div>
+                    <div className="bg-gray-50 p-2 rounded border flex justify-between items-center h-10">
+                        <span className="text-xs text-gray-500">Total ({getDias()} dias)</span>
+                        <span className="font-bold text-green-700">R$ {formData.valor_total.toFixed(2)}</span>
                     </div>
                 </div>
             </div>
 
-            <div>
-               <Label>Observações</Label>
-               <Textarea name="observacoes" value={formData.observacoes} onChange={handleChange} />
-            </div>
+            {/* INTEGRAÇÃO FNRH */}
+            {reservaId && (
+                <div className="border-t pt-4 mt-4">
+                    <h3 className="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
+                        <CloudLightning className="w-4 h-4 text-blue-600"/>
+                        Integração Governamental (FNRH)
+                    </h3>
+                    
+                    {formData.fnrh_sincronizado ? (
+                        <div className="bg-green-50 border border-green-200 rounded-md p-3">
+                            <div className="flex items-start gap-3 mb-4">
+                                <CheckCircle className="w-5 h-5 text-green-600 mt-0.5"/>
+                                <div>
+                                    <p className="text-sm font-semibold text-green-800">Sincronização Concluída</p>
+                                    <p className="text-xs text-green-700 mt-1">
+                                        ID Gov: <span className="font-mono">{formData.fnrh_reserva_id}</span>
+                                    </p>
+                                </div>
+                            </div>
 
-            {reservaId && !fnrhIdGov && (
-              <div className="border-t pt-4 mt-4">
-                <Label className="mb-2 block text-gray-700 font-bold">Integração Governamental (FNRH)</Label>
-                <FnrhCheckinButton
-                    reservaId={reservaId}
-                    defaultDates={{ checkin: formData.data_checkin, checkout: formData.data_checkout }}
-                    defaultClienteCpf={clienteSelecionado?.cpf}
-                    onSuccess={() => {
-                        alert("Sincronizado! A tela será atualizada para o painel FNRH.");
-                        onSave(); 
-                        onClose(); 
-                    }}
-                />
-              </div>
+                            {/* --- BOTÕES DE AÇÃO --- */}
+                            <div className="flex gap-2 border-t border-green-200 pt-3">
+                                {formData.status !== 'Check-in' && formData.status !== 'Check-out' && (
+                                    <Button 
+                                        onClick={handleFazerCheckinGov} 
+                                        disabled={processingAction}
+                                        className="bg-green-600 hover:bg-green-700 text-white w-full h-9 text-xs"
+                                    >
+                                        {processingAction ? <Loader2 className="animate-spin mr-2 h-3 w-3"/> : <LogIn className="mr-2 h-3 w-3"/>}
+                                        Realizar Check-in
+                                    </Button>
+                                )}
+
+                                {formData.status === 'Check-in' && (
+                                    <Button 
+                                        onClick={handleFazerCheckoutGov} 
+                                        disabled={processingAction}
+                                        className="bg-blue-600 hover:bg-blue-700 text-white w-full h-9 text-xs"
+                                    >
+                                        {processingAction ? <Loader2 className="animate-spin mr-2 h-3 w-3"/> : <LogOut className="mr-2 h-3 w-3"/>}
+                                        Realizar Check-out
+                                    </Button>
+                                )}
+
+                                {formData.status === 'Check-out' && (
+                                    <div className="w-full text-center text-xs text-gray-500 font-medium py-1 bg-gray-100 rounded">
+                                        Check-out Finalizado
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="bg-slate-50 border border-slate-200 rounded-md p-4 space-y-4">
+                            <div>
+                                <Label className="text-xs text-slate-500 mb-1 block">1. CPF do Hóspede (Pré-Checkin)</Label>
+                                <div className="relative">
+                                    <UserSearch className="absolute left-2.5 top-2.5 w-4 h-4 text-slate-400"/>
+                                    <Input value={cpfParaEnvio} onChange={(e) => setCpfParaEnvio(e.target.value)} className="pl-9 bg-white border-blue-200" placeholder="Digite o CPF..."/>
+                                </div>
+                            </div>
+                            <div className="flex flex-col sm:flex-row sm:items-end gap-3">
+                                <div className="flex-1 w-full">
+                                    <Label className="text-xs text-slate-500 mb-1 block">2. Código da Reserva</Label>
+                                    <div className="relative">
+                                        <Hash className="absolute left-2.5 top-2.5 w-4 h-4 text-slate-400"/>
+                                        <Input value={fnrhCodigo} onChange={(e) => setFnrhCodigo(e.target.value)} className="pl-9 bg-white" placeholder="Ex: RES123"/>
+                                    </div>
+                                </div>
+                                <Button onClick={handleEnviarFNRH} disabled={sendingGov || !fnrhCodigo || !cpfParaEnvio} className="bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto min-w-[160px]">
+                                    {sendingGov ? <Loader2 className="animate-spin mr-2 h-4 w-4"/> : <CloudLightning className="mr-2 h-4 w-4"/>}
+                                    {sendingGov ? 'Enviando...' : '3. Enviar e Vincular'}
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+                </div>
             )}
-
-            <div className="flex justify-between items-center pt-4 border-t mt-4">
-               {reservaId ? (
-                   <Button type="button" variant="destructive" onClick={handleDelete}>
-                       Excluir Reserva
-                   </Button>
-               ) : (
-                   <div></div>
-               )}
-
-               <div className="flex gap-2">
-                   <Button type="button" variant="ghost" onClick={onClose}>Cancelar</Button>
-                   <Button type="submit">Guardar Reserva</Button>
-               </div>
-            </div>
-          </form>
+          </div>
         )}
-      </div>
-    </div>
+
+        <DialogFooter className="mt-4 border-t pt-4 flex sm:justify-between flex-col-reverse sm:flex-row gap-2">
+            <div className="flex-1">
+                {reservaId && (
+                    <Button variant="destructive" onClick={handleExcluir} disabled={saving || deleting} className="bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 w-full sm:w-auto">
+                        {deleting ? <Loader2 className="animate-spin h-4 w-4"/> : <Trash2 className="h-4 w-4 mr-2"/>} Excluir
+                    </Button>
+                )}
+            </div>
+            <div className="flex gap-2 justify-end">
+                <Button variant="ghost" onClick={onClose} disabled={saving || deleting}>Fechar</Button>
+                <Button onClick={handleSalvarLocal} disabled={saving || deleting || !formData.id_cliente || !formData.id_quarto} className="bg-[#111827] text-white">
+                    {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} {reservaId ? 'Salvar Alterações' : 'Criar Reserva'}
+                </Button>
+            </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

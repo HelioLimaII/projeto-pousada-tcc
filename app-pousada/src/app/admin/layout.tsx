@@ -25,7 +25,6 @@ export default function AdminLayout({
     { href: '/admin/quartos', label: 'Gerenciar Quartos' },
     { href: '/admin/clientes', label: 'Gerenciar Clientes' },
     // [NOVO] Adicionado o link para o painel do governo
-    { href: '/admin/fnrh', label: 'Painel FNRH (Gov)' }, 
   ];
 
   return (

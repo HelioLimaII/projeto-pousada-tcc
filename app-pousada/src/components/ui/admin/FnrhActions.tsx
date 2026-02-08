@@ -1,3 +1,5 @@
+//src/components/ui/admin/FnrhActions.tsx
+
 'use client';
 
 import { useState } from 'react';

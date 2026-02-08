@@ -1,4 +1,3 @@
-// Arquivo: src/components/ui/QuartoCard.tsx
 'use client'
 
 import { useState, useEffect } from 'react';
@@ -11,7 +10,7 @@ import { Users } from 'lucide-react';
 interface Quarto {
   id: string;
   numero: number;
-  titulo: string | null; // Pode vir null do banco
+  titulo: string | null;
   descricao: string;
   preco_diaria: number;
   capacidade_hospedes: number;
@@ -40,10 +39,7 @@ const StatusBadge = ({ status }: { status: string }) => {
 export default function QuartoCard({ quarto }: { quarto: Quarto }) {
   const isDisponivel = quarto.status?.toLowerCase() === 'disponivel';
   
-  // URL de Placeholder segura (da internet) para garantir que sempre apareça algo
   const PLACEHOLDER_URL = "https://placehold.co/600x400/e2e8f0/1e293b?text=Sem+Foto";
-
-  // Define a imagem inicial: A primeira do array OU o placeholder
   const [imgSrc, setImgSrc] = useState(PLACEHOLDER_URL);
 
   useEffect(() => {
@@ -64,7 +60,6 @@ export default function QuartoCard({ quarto }: { quarto: Quarto }) {
               fill
               className="object-cover group-hover:scale-105 transition-transform duration-500"
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-              // Se a imagem do Cloudinary falhar, troca pelo placeholder via Estado
               onError={() => setImgSrc(PLACEHOLDER_URL)}
               priority={false}
             />
@@ -88,13 +83,11 @@ export default function QuartoCard({ quarto }: { quarto: Quarto }) {
           {quarto.descricao || 'Sem descrição disponível.'}
         </p>
 
-        <div className="flex items-center justify-between text-sm mb-4 pt-2 border-t border-gray-100">
+        {/* Alteração: Removido o 'justify-between' e a div de preço */}
+        <div className="flex items-center text-sm mb-4 pt-2 border-t border-gray-100">
           <div className="flex items-center gap-1.5 text-[#2F4F4F]/80">
             <Users className="w-4 h-4 text-[#6B8E23]" />
             <span className="font-medium">Até {quarto.capacidade_hospedes} pessoas</span>
-          </div>
-          <div className="font-bold text-[#2F4F4F] text-lg">
-             R$ {quarto.preco_diaria?.toFixed(2)}
           </div>
         </div>
 

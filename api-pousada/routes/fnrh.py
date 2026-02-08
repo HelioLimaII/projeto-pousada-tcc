@@ -33,11 +33,12 @@ async def listar_reservas_oficiais(
     inicio: str = None, 
     fim: str = None,
     situacao: str = None,
-    codigo: str = None  # <--- NOVO PARÂMETRO
+    codigo: str = None
 ):
-    """ESPELHO: Lista reservas com opção de busca por código"""
-    
-    # Repassa o 'codigo' para o service como 'numero_reserva'
+    """
+    ESPELHO: Lista reservas direto do FNRH.
+    Se 'codigo' for passado, busca especificamente por ele.
+    """
     res = await fnrh_service.listar_reservas_gov(
         pagina=pagina, 
         data_inicio=inicio, 
@@ -47,6 +48,7 @@ async def listar_reservas_oficiais(
     )
     
     if not res["sucesso"]:
+        # Se der erro, retorna lista vazia para não quebrar a tabela do front
         return {"dados": [], "paginacao": {"total": 0}}
     
     return res
@@ -65,13 +67,13 @@ async def criar_reserva(dados: ReservaPayload):
     id_gov = res["reserva_id_gov"]
     
     # 2. Atualiza Local (Vincula ID Gov à Reserva Local)
-    if dados.id_local:
+    if dados.id_local and ObjectId.is_valid(dados.id_local):
         db.reservas.update_one(
             {"_id": ObjectId(dados.id_local)},
             {"$set": {
                 "fnrh_reserva_id": id_gov,
                 "fnrh_sincronizado": True,
-                "status": "Confirmada" # Se criou no gov, está confirmada
+                "status": "Confirmada" 
             }}
         )
     
@@ -87,16 +89,21 @@ async def vincular_hospede(dados: VinculoPayload):
 
 # --- 3. AÇÕES DE STATUS (SYNC BIDIRECIONAL) ---
 
+# [CORREÇÃO] Adicionado "payload: dict = Body(...)" para receber o JSON do frontend
 @router.post("/checkin-manual/{id_gov}")
-async def checkin_manual(id_gov: str):
+async def checkin_manual(id_gov: str, payload: dict = Body(...)):
     """Botão VERDE (Check-in): Gov='Em Andamento', Local='Hospedado'"""
     
-    # 1. Gov
-    res = await fnrh_service.realizar_checkin_gov(id_gov)
+    # Extrai a data que o Frontend enviou (formato ISO)
+    data_iso = payload.get("data_hora")
+
+    # 1. Gov - Passamos a data para o serviço formatar corretamente
+    res = await fnrh_service.realizar_checkin_gov(id_gov, data_hora_iso=data_iso)
+    
     if not res["sucesso"]:
         raise HTTPException(status_code=400, detail=res["msg"])
     
-    # 2. Local
+    # 2. Local - Atualiza se encontrarmos essa reserva pelo ID do gov
     db.reservas.update_one(
         {"fnrh_reserva_id": id_gov},
         {"$set": {
@@ -106,12 +113,17 @@ async def checkin_manual(id_gov: str):
     )
     return {"sucesso": True, "msg": "Check-in realizado e sincronizado."}
 
+# [CORREÇÃO] Adicionado "payload: dict = Body(...)" para receber o JSON do frontend
 @router.post("/checkout-manual/{id_gov}")
-async def checkout_manual(id_gov: str):
+async def checkout_manual(id_gov: str, payload: dict = Body(...)):
     """Botão VERDE (Checkout): Gov='Concluída', Local='Finalizada'"""
     
-    # 1. Gov
-    res = await fnrh_service.realizar_checkout_gov(id_gov)
+    # Extrai a data que o Frontend enviou
+    data_iso = payload.get("data_hora")
+
+    # 1. Gov - Passamos a data para o serviço formatar corretamente
+    res = await fnrh_service.realizar_checkout_gov(id_gov, data_hora_iso=data_iso)
+    
     if not res["sucesso"]:
         raise HTTPException(status_code=400, detail=res["msg"])
     
@@ -150,9 +162,7 @@ async def desvincular_manual(reserva_id: str, hospede_id: str):
     if not res["sucesso"]:
         raise HTTPException(status_code=400, detail=res["msg"])
     
-    # 2. Local (Opcional: Registro de log ou flag)
-    # Não alteramos o status da reserva inteira aqui, pois pode haver outros hóspedes
-    
+    # 2. Local: Aqui não mudamos o status da reserva inteira, apenas removemos o vínculo lá
     return {"sucesso": True, "msg": "Hóspede desvinculado com sucesso."}
 
 @router.get("/reserva/{id_gov}")
@@ -165,11 +175,14 @@ async def obter_reserva_completa(id_gov: str):
 
 @router.get("/local-id/{id_gov}")
 async def buscar_id_local_por_gov(id_gov: str):
-    """Busca o ID da reserva local (MongoDB) usando o ID do Governo"""
+    """
+    Utilitário para o Front: Dado um ID do Governo (ex: BDBE2F), 
+    descobre qual é o ID da reserva no MongoDB (ex: 65a4...)
+    para podermos abrir o modal de edição local.
+    """
     reserva = db.reservas.find_one({"fnrh_reserva_id": id_gov}, {"_id": 1})
     
     if reserva:
         return {"sucesso": True, "local_id": str(reserva["_id"])}
     
-    # Se não achou, pode ser uma reserva antiga feita direto no site do Gov
     return {"sucesso": False, "msg": "Reserva não encontrada no banco local."}

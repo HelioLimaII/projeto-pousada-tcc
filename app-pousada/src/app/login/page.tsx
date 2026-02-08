@@ -47,16 +47,12 @@ export default function LoginPage() {
       const data = await login(formData.username, formData.password);
       
       // Passo 3: Salvar o token com o nome padronizado 'accessToken'
-      // Isso garante consistência com o resto da nossa implementação.
       localStorage.setItem('accessToken', data.access_token);
       
-      // Usar router.push é a prática recomendada no Next.js para navegação
-      // em vez de window.location.href, pois proporciona uma transição mais suave.
       router.push('/admin/dashboard');
 
     } catch (err) {
       console.error('Erro no login:', err);
-      // A mensagem de erro agora vem da nossa função central
       setError('Credenciais inválidas ou erro de conexão.');
     } finally {
       setIsLoading(false);
@@ -165,17 +161,6 @@ export default function LoginPage() {
             </div>
           </CardContent>
         </Card>
-
-        {/* Informações de Teste (remover em produção) */}
-        <div className="mt-6 p-4 bg-white/50 rounded-lg border border-[#6B8E23]/20">
-          <p className="text-xs text-[#2F4F4F]/70 text-center mb-2">
-            <strong>Credenciais de teste:</strong>
-          </p>
-          <p className="text-xs text-[#2F4F4F]/70 text-center">
-            Usuário: <code className="bg-[#6B8E23]/10 px-1 rounded">helio</code> | 
-            Senha: <code className="bg-[#6B8E23]/10 px-1 rounded">123</code>
-          </p>
-        </div>
       </div>
     </div>
   )

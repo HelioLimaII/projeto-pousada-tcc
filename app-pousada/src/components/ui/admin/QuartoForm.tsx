@@ -1,4 +1,3 @@
-// Em: src/components/ui/admin/QuartoForm.tsx
 'use client';
 
 import { useState, useRef } from 'react';
@@ -13,14 +12,14 @@ import Image from 'next/image';
 interface QuartoFormData {
   numero: number;
   descricao: string;
-  preco_diaria: number;
   capacidade_hospedes: number;
   status: string;
-  fotos?: string[]; // Para exibir as fotos que já existem
+  fotos?: string[];
+  // preco_diaria removido da interface visual, mas tratado internamente se necessário
 }
 
 interface QuartoFormProps {
-  initialData?: Partial<QuartoFormData>;
+  initialData?: Partial<QuartoFormData & { preco_diaria?: number }>; // Mantém compatibilidade com dados antigos
   onSubmit: (formData: FormData) => void;
   isLoading: boolean;
 }
@@ -29,7 +28,6 @@ export default function QuartoForm({ initialData = {}, onSubmit, isLoading }: Qu
   const [formData, setFormData] = useState<QuartoFormData>({
     numero: initialData.numero || 0,
     descricao: initialData.descricao || '',
-    preco_diaria: initialData.preco_diaria || 0,
     capacidade_hospedes: initialData.capacidade_hospedes || 1,
     status: initialData.status || 'disponivel',
     fotos: initialData.fotos || [],
@@ -42,16 +40,16 @@ export default function QuartoForm({ initialData = {}, onSubmit, isLoading }: Qu
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     const finalValue = e.target.type === 'number' ? parseFloat(value) || 0 : value;
-    setFormData(prev => ({ ...prev, [name]: finalValue }));
+    
+    // Type assertion para contornar chaves dinâmicas
+    setFormData(prev => ({ ...prev, [name]: finalValue } as QuartoFormData));
   };
 
-  // Lógica melhorada de seleção de arquivos com Preview
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const filesArray = Array.from(e.target.files);
       setSelectedFiles(prev => [...prev, ...filesArray]);
 
-      // Gera URLs temporárias para mostrar o preview
       const newPreviews = filesArray.map(file => URL.createObjectURL(file));
       setPreviews(prev => [...prev, ...newPreviews]);
     }
@@ -66,16 +64,15 @@ export default function QuartoForm({ initialData = {}, onSubmit, isLoading }: Qu
     e.preventDefault();
     const data = new FormData();
 
-    // 1. Adiciona campos de texto
     data.append('numero', String(formData.numero));
     data.append('descricao', formData.descricao);
-    data.append('preco_diaria', String(formData.preco_diaria));
     data.append('capacidade_hospedes', String(formData.capacidade_hospedes));
     data.append('status', formData.status);
+    
+    // [MODIFICAÇÃO] Enviamos 0 ou null para o preço, já que ele agora depende da reserva
+    // Se sua API exigir um número, enviamos "0".
+    data.append('preco_diaria', "0");
 
-    // 2. Adiciona as imagens com o nome correto esperado pelo Backend
-    // Se initialData.numero existe, estamos EDITANDO (PUT) -> Backend espera 'novas_fotos'
-    // Se não, estamos CRIANDO (POST) -> Backend espera 'images'
     const fieldName = initialData.numero ? 'novas_fotos' : 'images';
 
     selectedFiles.forEach((file) => {
@@ -86,7 +83,7 @@ export default function QuartoForm({ initialData = {}, onSubmit, isLoading }: Qu
   };
 
   return (
-    <Card className="w-full max-w-4xl mx-auto">
+    <Card className="w-full max-w-4xl mx-auto border-none shadow-none sm:border sm:shadow-sm">
       <CardHeader>
         <CardTitle>{initialData.numero ? 'Editar Quarto' : 'Criar Novo Quarto'}</CardTitle>
       </CardHeader>
@@ -96,39 +93,67 @@ export default function QuartoForm({ initialData = {}, onSubmit, isLoading }: Qu
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="numero">Número do Quarto</Label>
-              <Input id="numero" name="numero" type="number" value={formData.numero} onChange={handleChange} required disabled={isLoading} />
+              <Input 
+                id="numero" 
+                name="numero" 
+                type="number" 
+                value={formData.numero} 
+                onChange={handleChange} 
+                required 
+                disabled={isLoading} 
+              />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
-              <select id="status" name="status" value={formData.status} onChange={handleChange} className="w-full h-10 px-3 border border-input rounded-md text-sm bg-white" disabled={isLoading}>
-                <option value="disponivel">Disponível</option>
-                <option value="ocupado">Ocupado</option>
-                <option value="manutencao">Em Manutenção</option>
+              <Label htmlFor="status">Status Operacional</Label>
+              <select 
+                id="status" 
+                name="status" 
+                value={formData.status} 
+                onChange={handleChange} 
+                className="w-full h-10 px-3 border border-input rounded-md text-sm bg-white focus:ring-2 focus:ring-blue-600 outline-none" 
+                disabled={isLoading}
+              >
+                <option value="disponivel">Disponível (Apto para reservas)</option>
+                <option value="manutencao">Em Manutenção (Bloqueado)</option>
               </select>
+              <p className="text-xs text-slate-500 mt-1">
+                * Quartos em manutenção não podem receber reservas.
+              </p>
             </div>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="descricao">Descrição</Label>
-            <Textarea id="descricao" name="descricao" value={formData.descricao} onChange={handleChange} rows={3} disabled={isLoading} />
+            <Textarea 
+              id="descricao" 
+              name="descricao" 
+              value={formData.descricao} 
+              onChange={handleChange} 
+              rows={3} 
+              disabled={isLoading} 
+            />
           </div>
           
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="preco_diaria">Preço da Diária (R$)</Label>
-              <Input id="preco_diaria" name="preco_diaria" type="number" step="0.01" value={formData.preco_diaria} onChange={handleChange} disabled={isLoading} />
-            </div>
+          {/* [MODIFICAÇÃO] Removido o campo de Preço da Diária. Agora o layout ajusta a Capacidade. */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="capacidade_hospedes">Capacidade de Hóspedes</Label>
-              <Input id="capacidade_hospedes" name="capacidade_hospedes" type="number" value={formData.capacidade_hospedes} onChange={handleChange} disabled={isLoading} />
+              <Input 
+                id="capacidade_hospedes" 
+                name="capacidade_hospedes" 
+                type="number" 
+                value={formData.capacidade_hospedes} 
+                onChange={handleChange} 
+                disabled={isLoading} 
+              />
             </div>
+            {/* O espaço que sobrava do preço pode ser usado para futuras informações ou deixar vazio */}
           </div>
 
-          {/* Seção de Upload de Fotos Melhorada */}
+          {/* Seção de Upload de Fotos */}
           <div className="space-y-4 border-t pt-4">
             <Label className="text-lg font-semibold">Fotos</Label>
             
-            {/* Exibe Fotos Já Existentes (Se estiver editando) */}
             {initialData.fotos && initialData.fotos.length > 0 && (
               <div className="mb-4">
                 <p className="text-sm text-gray-500 mb-2">Fotos Atuais:</p>
@@ -142,7 +167,6 @@ export default function QuartoForm({ initialData = {}, onSubmit, isLoading }: Qu
               </div>
             )}
 
-            {/* Área de Seleção */}
             <div 
               className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:bg-gray-50 transition-colors cursor-pointer"
               onClick={() => fileInputRef.current?.click()}
@@ -160,7 +184,6 @@ export default function QuartoForm({ initialData = {}, onSubmit, isLoading }: Qu
               />
             </div>
 
-            {/* Previews das Novas Fotos Selecionadas */}
             {previews.length > 0 && (
               <div className="grid grid-cols-3 md:grid-cols-5 gap-4 mt-4">
                 {previews.map((src, index) => (
