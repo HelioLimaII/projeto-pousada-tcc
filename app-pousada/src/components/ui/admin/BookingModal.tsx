@@ -257,14 +257,13 @@ export default function BookingModal({
       }
   };
 
-  // --- NOVAS AÇÕES: CHECK-IN / CHECK-OUT ---
+  // --- NOVAS AÇÕES: CHECK-IN / CHECK-OUT (MANTIDAS NO CÓDIGO MAS NÃO EXIBIDAS) ---
   const handleFazerCheckinGov = async () => {
       if (!formData.fnrh_reserva_id) return;
       if (!confirm(`Confirmar ENTRADA (Check-in) no Governo?`)) return;
 
       setProcessingAction(true);
       try {
-          // [CORREÇÃO] Gera data ISO e envia no body da requisição
           const agora = new Date().toISOString();
           await realizarCheckinFnrh(formData.fnrh_reserva_id, agora);
           
@@ -285,7 +284,6 @@ export default function BookingModal({
 
       setProcessingAction(true);
       try {
-          // [CORREÇÃO] Gera data ISO e envia no body da requisição
           const agora = new Date().toISOString();
           await realizarCheckoutFnrh(formData.fnrh_reserva_id, agora);
           
@@ -390,46 +388,15 @@ export default function BookingModal({
                     </h3>
                     
                     {formData.fnrh_sincronizado ? (
-                        <div className="bg-green-50 border border-green-200 rounded-md p-3">
-                            <div className="flex items-start gap-3 mb-4">
-                                <CheckCircle className="w-5 h-5 text-green-600 mt-0.5"/>
+                        <div className="bg-green-50 border border-green-200 rounded-md p-4">
+                            <div className="flex items-center gap-3">
+                                <CheckCircle className="w-5 h-5 text-green-600"/>
                                 <div>
-                                    <p className="text-sm font-semibold text-green-800">Sincronização Concluída</p>
+                                    <p className="text-sm font-bold text-green-800">Reserva enviada com sucesso a FNRH</p>
                                     <p className="text-xs text-green-700 mt-1">
                                         ID Gov: <span className="font-mono">{formData.fnrh_reserva_id}</span>
                                     </p>
                                 </div>
-                            </div>
-
-                            {/* --- BOTÕES DE AÇÃO --- */}
-                            <div className="flex gap-2 border-t border-green-200 pt-3">
-                                {formData.status !== 'Check-in' && formData.status !== 'Check-out' && (
-                                    <Button 
-                                        onClick={handleFazerCheckinGov} 
-                                        disabled={processingAction}
-                                        className="bg-green-600 hover:bg-green-700 text-white w-full h-9 text-xs"
-                                    >
-                                        {processingAction ? <Loader2 className="animate-spin mr-2 h-3 w-3"/> : <LogIn className="mr-2 h-3 w-3"/>}
-                                        Realizar Check-in
-                                    </Button>
-                                )}
-
-                                {formData.status === 'Check-in' && (
-                                    <Button 
-                                        onClick={handleFazerCheckoutGov} 
-                                        disabled={processingAction}
-                                        className="bg-blue-600 hover:bg-blue-700 text-white w-full h-9 text-xs"
-                                    >
-                                        {processingAction ? <Loader2 className="animate-spin mr-2 h-3 w-3"/> : <LogOut className="mr-2 h-3 w-3"/>}
-                                        Realizar Check-out
-                                    </Button>
-                                )}
-
-                                {formData.status === 'Check-out' && (
-                                    <div className="w-full text-center text-xs text-gray-500 font-medium py-1 bg-gray-100 rounded">
-                                        Check-out Finalizado
-                                    </div>
-                                )}
                             </div>
                         </div>
                     ) : (
