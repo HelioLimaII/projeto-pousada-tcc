@@ -1,18 +1,21 @@
-# Usa uma versão leve do Python
 FROM python:3.11-slim
 
-# Define a pasta de trabalho dentro do servidor
 WORKDIR /app
 
-# Copia as dependências e instala
+# Instalar dependências do sistema necessárias para algumas libs Python
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copiar e instalar dependências
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copia todo o resto do seu código para o servidor (incluindo o api.py)
+# Copiar todo o código da API
 COPY . .
 
-# O Google Cloud Run usa a porta 8080 por padrão
-EXPOSE 8080
+# O Google Cloud Run injeta a porta nessa variável $PORT (geralmente 8080)
+ENV PORT=8000
 
-# Comando para iniciar o FastAPI (igual ao que o Render tentou usar)
-CMD ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8080"]
+# Comando para ligar o servidor FastAPI
+CMD uvicorn api:app --host 0.0.0.0 --port $PORT

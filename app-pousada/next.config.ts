@@ -2,6 +2,7 @@
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'standalone',
   reactStrictMode: true,
   // [CORREÇÃO DEPLOY] Ignora erros de lint/types para não travar o build no Render
   eslint: {
@@ -31,5 +32,7 @@ const nextConfig = {
     ],
   },
 };
+
+
 
 export default nextConfig;
